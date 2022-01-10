@@ -194,14 +194,5 @@ class Parser:
 
 if __name__ == '__main__':
     pars = Parser("http://www.katt44.ru/index.php?option=com_content&view=article&id=252&Itemid=129")
-    """    with open("Расписание.html") as file:
-        src = file.read()
-    import time
-    start_time = time.time()
-    pars.soup = bs(src, "lxml")
-    pars._update_date()
-    print("--- %s seconds ---" % (time.time() - start_time))"""
-
     for i in pars.get_tables():
         print(pars.table_to_str(i, style_id=0))
-

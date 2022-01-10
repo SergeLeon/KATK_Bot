@@ -44,8 +44,7 @@ class DataBase:
         result = [self.__list_to_dict(info) for info in self.cursor.fetchmany()]
         if result:
             return result[0]
-        else:
-            return result
+        return result
 
     def get_adverted(self):
         self.cursor.execute("SELECT * from groups WHERE adv=1;")
@@ -53,31 +52,8 @@ class DataBase:
 
 
 if __name__ == '__main__':
-    """from dataclasses import dataclass
-    import pickle
-
-    @dataclass
-    class GroupInfo:
-        peer_id: int
-        name: str
-        adv = True
-        style_id = 0
-
-    with open('data.pickle', 'rb') as f:
-        groups_info = pickle.load(f)
-
-    db = DataBase("database.db")
-
-    for gr in groups_info:
-        if gr.adv:
-            advert = 1
-        else:
-            advert = 0
-        db.add_group(peer_id=gr.peer_id, group_name=gr.name, adv=advert, style_id=gr.style_id)"""
-
     db = DataBase("database.db")
     db.cursor.execute("SELECT * FROM groups;")
-    res = db.get_adverted()
+    res = db.cursor.fetchall()
     for i in res:
         print(i)
-    print(db.get_by_peer_id(2000000004))

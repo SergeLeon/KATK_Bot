@@ -64,7 +64,7 @@ class Main:
                         for group_info in self.db.get_adverted():
                             self.events.send_table.append(group_info["peer_id"])
 
-                    elif new_tables != self.tables:
+                    elif new_tables != old_tables:
 
                         logger.info("Таблицы обновлены")
 
@@ -207,4 +207,4 @@ if __name__ == '__main__':
     try:
         app.run()
     except:
-        logger.critical(f"Экстренное завершение: {logger.exception('')}")
+        logger.exception('')

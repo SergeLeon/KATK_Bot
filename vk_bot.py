@@ -59,12 +59,10 @@ class VKBot:
                     if event.type == VkBotEventType.MESSAGE_NEW:
                         msg = event.obj["message"]["text"]
                         peer_id = event.obj["message"]["peer_id"]
-                        print(peer_id, msg)
 
                         msg = msg.lower()
-
                         # Ответ на сообщения
-                        if msg.startswith("/sl ") or msg.startswith("/ls "):
+                        if msg.startswith("/sl "):
 
                             logger.debug(f"От {peer_id} получена команда: {msg}")
 
@@ -105,7 +103,7 @@ class VKBot:
             except (ReadTimeout, ConnectionError):
                 self.reconnect()
             except KeyboardInterrupt:
-                pass
+                break
             except:
                 logger.exception('')
 
