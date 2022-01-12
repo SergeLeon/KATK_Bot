@@ -43,8 +43,10 @@ class Main:
         self.tables_date = self.pars.get_today_date()
 
     def parsing_loop(self):
-        logger.info("parsing_loop запущен")
+        db = DataBase("database.db")
         self.update()
+
+        logger.info("parsing_loop запущен")
         while True:
             try:
                 self.pars.update()
@@ -61,7 +63,7 @@ class Main:
                         self.update()
                         logger.info("Все таблицы обновлены")
                         logger.debug(f"Дата: {self.tables_date}")
-                        for group_info in self.db.get_adverted():
+                        for group_info in db.get_adverted():
                             self.events.send_table.append(group_info["peer_id"])
 
                     elif new_tables != old_tables:
@@ -77,7 +79,7 @@ class Main:
 
                         self.update()
 
-                        for group_info in self.db.get_adverted():
+                        for group_info in db.get_adverted():
                             if group_info["name"] in updated_groups:
                                 self.events.send_table.append(group_info["peer_id"])
 
