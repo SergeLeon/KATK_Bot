@@ -1,5 +1,6 @@
 from time import sleep
 
+import vk_api.exceptions
 from requests.exceptions import ReadTimeout, ConnectionError
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
@@ -25,9 +26,13 @@ class VKBot:
             random_id = get_random_id()
             self.vk.messages.send(peer_id=peer_id, message=text, random_id=random_id)
             logger.debug(f"Для {peer_id} отправлено сообщение")
-        except ReadTimeout:
+        except (ReadTimeout, ConnectionError):
             self.reconnect()
             self.send(peer_id, text)
+        except vk_api.exceptions.ApiError as exc:
+            if exc.code == 7:
+                # код 7 - бот удален из беседы
+                self.events.delete_group.append(peer_id)
 
     def reconnect(self, recon_max=5, recon_time=60, count=1):
         if count == 1:

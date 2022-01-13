@@ -50,6 +50,11 @@ class DataBase:
         self.cursor.execute("SELECT * from groups WHERE adv=1;")
         return [self.__list_to_dict(info) for info in self.cursor.fetchall()]
 
+    def delete_by_peer_id(self, peer_id):
+        self.cursor.execute(f"DELETE FROM groups WHERE peer_id=?;", (peer_id,))
+        self.connection.commit()
+        logger.debug(f"Информация о {peer_id} удалена")
+
 
 if __name__ == '__main__':
     db = DataBase("database.db")

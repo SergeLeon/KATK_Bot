@@ -15,6 +15,7 @@ class Events:
     set_adv = []
     set_style = []
     send_table = []
+    delete_group = []
 
 
 logger = log.setup_applevel_logger()
@@ -160,6 +161,9 @@ class Main:
         else:
             self.bot.send(peer_id=peer_id, text="Информация отсутствует")
 
+    def __delete_group(self, peer_id):
+        self.db.delete_by_peer_id(peer_id=peer_id)
+
     def event_loop(self):
         self.db.reconnect()
         logger.info("event_loop запущен")
@@ -184,6 +188,11 @@ class Main:
                 for peer_id in self.events.send_table:
                     self.__send_table(peer_id)
                     self.events.send_table.remove(peer_id)
+
+                # Отлов ивентов на удаление из бд
+                for peer_id in self.events.send_table:
+                    self.__delete_group(peer_id)
+                    self.events.delete_group.remove(peer_id)
 
             except:
                 logger.exception('')
