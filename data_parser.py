@@ -109,6 +109,8 @@ class Parser:
                      for line in table])
 
         for table in group_tables:
+            # Удаление пробелов в названии группы
+            table[0][1] = table[0][1].replace(' ', "")
             for line in reversed(table):
                 if not line[1]:
                     table.remove(line)
@@ -184,6 +186,8 @@ class Parser:
 
         date = self.get_today_date()
         table_str = date + "\n" + table_str
+
+        table_str = table_str.replace("Группа", " Группа")
 
         if table_str.count("\n") <= 2:
             table_str = table_str.split("Группа")[0]

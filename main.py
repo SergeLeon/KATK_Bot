@@ -115,7 +115,7 @@ class Main:
             else:
                 self.db.add_group(peer_id=peer_id, group_name=norm_group)
 
-            self.bot.send(peer_id=peer_id, text=f"Группа изменена на {norm_group}.")
+            self.bot.send(peer_id=peer_id, text=f"Группа изменена на {norm_group.replace('ГРУППА', '')}.")
 
         else:
             self.bot.send(peer_id=peer_id, text=f"Группа {group_name} не найдена.")
