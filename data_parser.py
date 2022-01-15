@@ -2,23 +2,28 @@ from time import sleep
 
 import requests
 from bs4 import BeautifulSoup as bs
+from fake_useragent import UserAgent
 
 
 class Parser:
     def __init__(self, url):
+        self.ua = UserAgent(use_cache_server=False)
         self.url = url
+        self.session = requests.Session()
         self.soup = bs()
         self.date = ""
         self.update()
 
     def update(self, recon_max=5, recon_time=60, count=1):
         try:
-            self.soup = bs(requests.get(self.url).content, "html.parser")
+            self.session.headers.update({'User-Agent': self.ua.random})
+            response = self.session.get(self.url, timeout=5).content
+            self.soup = bs(response, "html.parser")
             self._update_date()
         except:
             count += 1
-            if count % (recon_max*2) == 0:
-                sleep(recon_time*120)
+            if count % (recon_max * 2) == 0:
+                sleep(recon_time * 120)
             elif count % recon_max == 0:
                 sleep(recon_time)
 
@@ -37,17 +42,18 @@ class Parser:
     def get_today_date(self):
         return self.date
 
-    def tables_to_group_names(self, tables):
+    @staticmethod
+    def tables_to_group_names(tables):
         return [table[0][1] for table in tables]
 
     def __pars_today_tables(self):
-        output = []
         tables = self.soup.find_all("table")
         groups = []
+
+        text_lines = []
         for table in tables:
             lines = table.find_all("tr")
 
-            text_table = []
             for line in lines:
                 cells = line.find_all("td")
 
@@ -68,29 +74,19 @@ class Parser:
                         text = texts[1]
                         if "ГРУППА" in text:
                             groups.append(text)
-                        text_table.append(texts)
+                        text_lines.append(texts)
 
-            output.append(text_table)
-
-        # костыль бага с неполным списком в __text_tables_to_tables
-        if output:
-            output[-1].append(["", "ГРУППА"])
-
-        return output
+        return text_lines
 
     @staticmethod
-    def __text_tables_to_tables(text_tables):
-        tables = []
-        for table in text_tables:
-            for line in table:
-                tables.append(line)
-
+    def __text_lines_to_tables(text_tables):
         last_line = 0
         new_tables = []
-        for line_num, line in enumerate(tables):
+        for line_num, line in enumerate(text_tables):
             if "ГРУППА" in line[1]:
-                new_tables.append(tables[last_line: line_num])
+                new_tables.append(text_tables[last_line: line_num])
                 last_line = line_num
+
         return new_tables[1:]
 
     @staticmethod
@@ -121,7 +117,7 @@ class Parser:
 
     def get_tables(self):
         return self.__tables_to_group_tables(
-            self.__text_tables_to_tables(
+            self.__text_lines_to_tables(
                 self.__pars_today_tables()))
 
     def __pars_spans_text(self):
@@ -129,7 +125,8 @@ class Parser:
         spans_text = [span.text for span in spans if "(" in span.text]
         return spans_text
 
-    def __theme_0(self, table, column_width):
+    @staticmethod
+    def __theme_0(table, column_width):
         table_str = ""
         for line_num, line in enumerate(table):
             for cell_num, cell in enumerate(line):
@@ -146,7 +143,8 @@ class Parser:
             table_str += "\n"
         return table_str
 
-    def __theme_1(self, table, column_width):
+    @staticmethod
+    def __theme_1(table, column_width):
         table_str = ""
         for line_num, line in enumerate(table):
             for cell_num, cell in enumerate(line):
@@ -167,7 +165,8 @@ class Parser:
             table_str += "\n"
         return table_str
 
-    def table_to_str(self, table, style_id: int):
+    @staticmethod
+    def __column_width_by_table(table):
         column_width = []
         for column in range(len(table[0])):
             max_width = 0
@@ -176,6 +175,10 @@ class Parser:
                 if width > max_width:
                     max_width = width
             column_width.append(max_width)
+        return column_width
+
+    def table_to_str(self, table, style_id: int):
+        column_width = self.__column_width_by_table(table)
 
         if style_id == 0:
             table_str = self.__theme_0(table, column_width)
@@ -187,7 +190,7 @@ class Parser:
         date = self.get_today_date()
         table_str = date + "\n" + table_str
 
-        table_str = table_str.replace("Группа", " Группа")
+        table_str = table_str.replace("Группа ", " Группа")
 
         if table_str.count("\n") <= 2:
             table_str = table_str.split("Группа")[0]
@@ -197,6 +200,12 @@ class Parser:
 
 
 if __name__ == '__main__':
+    import time
+
+    start_time = time.time()
+
     pars = Parser("http://www.katt44.ru/index.php?option=com_content&view=article&id=252&Itemid=129")
     for i in pars.get_tables():
         print(pars.table_to_str(i, style_id=0))
+
+    print("--- %s seconds ---" % (time.time() - start_time))
