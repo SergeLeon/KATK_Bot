@@ -190,7 +190,7 @@ class Main:
                     self.events.send_table.remove(peer_id)
 
                 # Отлов ивентов на удаление из бд
-                for peer_id in self.events.send_table:
+                for peer_id in self.events.delete_group:
                     self.__delete_group(peer_id)
                     self.events.delete_group.remove(peer_id)
 

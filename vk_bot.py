@@ -33,6 +33,8 @@ class VKBot:
             if exc.code == 7:
                 # код 7 - бот удален из беседы
                 self.events.delete_group.append(peer_id)
+            else:
+                logger.warning(f"При отправке произошла ошибка:\n{exc}")
 
     def reconnect(self, recon_max=5, recon_time=60, count=1):
         if count == 1:
