@@ -41,7 +41,7 @@ class Main:
     def update(self):
         self.tables = self.pars.get_tables()
         self.group_names = self.pars.tables_to_group_names(self.tables)
-        self.tables_date = self.pars.get_today_date()
+        self.tables_date = self.pars.get_date()
 
     def parsing_loop(self):
         db = DataBase("database.db")
@@ -60,7 +60,7 @@ class Main:
                     new_tables.sort(key=lambda table: table[0][1])
                     old_tables.sort(key=lambda table: table[0][1])
 
-                    if self.pars.get_today_date() != self.tables_date:
+                    if self.pars.get_date() != self.tables_date:
                         self.update()
                         logger.info("Все таблицы обновлены")
                         logger.debug(f"Дата: {self.tables_date}")

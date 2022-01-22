@@ -39,7 +39,7 @@ class Parser:
             date = ""
         self.date = date
 
-    def get_today_date(self):
+    def get_date(self):
         return self.date
 
     @staticmethod
@@ -107,6 +107,8 @@ class Parser:
         for table in group_tables:
             # Удаление пробелов в названии группы
             table[0][1] = table[0][1].replace(' ', "")
+            if "ГРУППА" in table[0][1]:
+                table[0][1] = table[0][1].split('ГРУППА')[0]
             for line in reversed(table):
                 if not line[1]:
                     table.remove(line)
@@ -178,6 +180,12 @@ class Parser:
         return column_width
 
     def table_to_str(self, table, style_id: int):
+        # Глубокое копирование для избежания внешнего изменения таблицы
+        table = [[cell for cell in line] for line in table]
+
+        if table[0][1]:
+            table[0][1] = f"{table[0][1]} Группа"
+
         column_width = self.__column_width_by_table(table)
 
         if style_id == 0:
@@ -187,14 +195,11 @@ class Parser:
         else:
             table_str = self.__theme_0(table, column_width)
 
-        date = self.get_today_date()
+        date = self.get_date()
         table_str = date + "\n" + table_str
 
-        table_str = table_str.replace("Группа ", " Группа")
-
         if table_str.count("\n") <= 2:
-            table_str = table_str.split("Группа")[0]
-            table_str += "Группа\nПар нет\n"
+            table_str += "Пар нет\n"
 
         return table_str
 

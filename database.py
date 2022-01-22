@@ -41,9 +41,9 @@ class DataBase:
 
     def get_by_peer_id(self, peer_id):
         self.cursor.execute("SELECT * from groups WHERE peer_id=?;", (peer_id,))
-        result = [self.__list_to_dict(info) for info in self.cursor.fetchmany()]
+        result = self.cursor.fetchone()
         if result:
-            return result[0]
+            return self.__list_to_dict(result)
         return result
 
     def get_adverted(self):
