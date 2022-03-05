@@ -24,8 +24,11 @@ class Parser:
             self._update_date()
         except:
             count += 1
-            if count % (recon_max * 2) == 0:
-                sleep(recon_time * 120)
+
+            if count % (recon_max*4) == 0:
+                sleep(recon_time*120)
+            elif count % (recon_max*2) == 0:
+                sleep(recon_time*10)
             elif count % recon_max == 0:
                 sleep(recon_time)
 
@@ -91,7 +94,9 @@ class Parser:
 
                 texts = []
                 for cell in cells:
-                    text = cell.text.upper()
+                    text = ""
+
+                    text += cell.text.upper()
 
                     # Привод значений в понятный вид
                     text = text.strip("\n")
@@ -103,10 +108,14 @@ class Parser:
                         "ПОЧТА НА САЙТЕ.")
                     text = text.strip()
 
-                    # Поиск и вставка ссылки
-                    cell_a = cell.find("a")
+                    # Поиск и вставка ссылки/ок
+                    cell_a = cell.find_all("a")
                     if cell_a:
-                        text += " " + cell_a.get("href")
+                        for a in cell_a:
+                            link = a.get("href")
+                            if "http" not in link:
+                                link = f"https://katt44.ru{link}"
+                            text += " " + link
 
                     texts.append(text)
 
@@ -162,21 +171,26 @@ class Parser:
                 if len(line) == 2:
                     if "КАБ" in line[1]:
                         splited = line[1].split('КАБ')
-                        
-                        title = splited[0].strip()  
+
+                        title = splited[0].strip()
                         cab_number = splited[1].strip().replace(".", "")
-     
+
                         line[1] = title
                         line.append(cab_number)
-                        
+
                     elif "http" in line[1]:
                         splited = line[1].split()
 
-                        title = splited[0].strip()
-                        link = splited[1]
+                        titles = []
+                        links = []
+                        for word in splited:
+                            if "http" in word:
+                                links.append(word)
+                            else:
+                                titles.append(word.strip())
 
-                        line[1] = title
-                        line.append(link)
+                        line[1] = " ".join(titles)
+                        line.append(" ".join(links))
 
                     else:
                         line.append("")

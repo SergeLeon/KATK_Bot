@@ -47,8 +47,10 @@ class VKBot:
         except (ReadTimeout, ConnectionError):
             count += 1
 
-            if count % (recon_max*2) == 0:
+            if count % (recon_max*4) == 0:
                 sleep(recon_time*120)
+            elif count % (recon_max*2) == 0:
+                sleep(recon_time*10)
             elif count % recon_max == 0:
                 sleep(recon_time)
 
@@ -101,7 +103,7 @@ class VKBot:
                         if ("action" in event.obj["message"]) and ("type" in event.obj["message"]["action"]):
                             # Действие при добавлении бота в беседу
                             if event.obj["message"]["action"]["type"] == "chat_invite_user" and \
-                                    event.obj["message"]["action"]["member_id"] == -209119751:
+                                    event.obj["message"]["action"]["member_id"] == -GROUP_ID:
                                 logger.debug(f"Бот добавлен в {peer_id}")
 
                                 self.send(peer_id, BOT_ADD_TEXT)
