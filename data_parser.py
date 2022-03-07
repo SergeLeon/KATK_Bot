@@ -131,19 +131,19 @@ class Parser:
         return text_lines
 
     @staticmethod
-    def _text_lines_to_tables(text_tables):
+    def _split_table_by_lines(text_table):
         last_line = 0
         new_tables = []
-        for line_num, line in enumerate(text_tables):
+        for line_num, line in enumerate(text_table):
             if "ГРУППА" in line[0]:
-                new_tables.append(text_tables[last_line: line_num])
+                new_tables.append(text_table[last_line: line_num])
                 last_line = line_num
-        new_tables.append(text_tables[last_line: -1])
+        new_tables.append(text_table[last_line: -1])
 
         return new_tables[1:]
 
     @staticmethod
-    def _tables_to_group_tables(tables):
+    def _split_tables_by_columns(tables):
         group_tables = []
         for table in tables:
 
@@ -151,59 +151,79 @@ class Parser:
                 group_tables.append(
                     [[line[0][:5] + "-" + line[0][-5:], line[group_num]] for line in table])
 
-        for table in group_tables:
-            # Удаление пробелов в названии группы
-            table[0][1] = table[0][1].replace(' ', "")
-            if "ГРУППА" in table[0][1]:
-                # Перестановка информации для повышения информативности
-                first_line = table[0][1].split('ГРУППА')
-                table[0][1] = first_line[0]
-                if first_line[1]:
-                    table[0][2] += f' {first_line[1]}'
-            # удаление строк не несущих полезной информации
-            for line in table[::-1]:
-                if not line[1]:
-                    table.remove(line)
+        return group_tables
+
+    def _split_table(self, table):
+        return self._split_tables_by_columns(
+               self._split_table_by_lines(table))
+
+    @staticmethod
+    def _delete_uninformative_table_lines(table):
+        table = [[cell for cell in line] for line in table]
+
+        for line in table[::-1]:
+            if not line[1]:
+                table.remove(line)
+            else:
+                break
+        return table
+
+    @staticmethod
+    def _reformat_table(table):
+        table = [[cell for cell in line] for line in table]
+
+        for line in table:
+            if len(line) == 2:
+                if "КАБ" in line[1]:
+                    splited = line[1].split('КАБ')
+
+                    title = splited[0].strip()
+                    cab_number = splited[1].strip().replace(".", "")
+
+                    line[1] = title
+                    line.append(cab_number)
+
+                elif "http" in line[1]:
+                    splited = line[1].split()
+
+                    titles = []
+                    links = []
+                    for word in splited:
+                        if "http" in word:
+                            links.append(word)
+                        else:
+                            titles.append(word.strip())
+
+                    line[1] = " ".join(titles)
+                    line.append(" ".join(links))
+
                 else:
-                    break
+                    line.append("")
 
-            for line in table:
-                if len(line) == 2:
-                    if "КАБ" in line[1]:
-                        splited = line[1].split('КАБ')
+        table[0][1] = table[0][1].replace(' ', "")
+        first_line = table[0][1].split(" ")
+        table[0][1] = first_line[0]
+        if len(first_line) > 1:
+            table[0][2] += f' {first_line[1]}'
 
-                        title = splited[0].strip()
-                        cab_number = splited[1].strip().replace(".", "")
+        return table
 
-                        line[1] = title
-                        line.append(cab_number)
+    def _tables_to_group_tables(self, tables):
+        group_tables = []
 
-                    elif "http" in line[1]:
-                        splited = line[1].split()
+        for table in tables:
+            table = self._delete_uninformative_table_lines(table)
+            if table:
+                table = self._reformat_table(table)
 
-                        titles = []
-                        links = []
-                        for word in splited:
-                            if "http" in word:
-                                links.append(word)
-                            else:
-                                titles.append(word.strip())
-
-                        line[1] = " ".join(titles)
-                        line.append(" ".join(links))
-
-                    else:
-                        line.append("")
-
-        while [] in group_tables:
-            group_tables.remove([])
+                group_tables.append(table)
 
         return group_tables
 
     def get_tables(self):
         return self._tables_to_group_tables(
-            self._text_lines_to_tables(
-                self._pars_today_tables()))
+               self._split_table(
+               self._pars_today_tables()))
 
     def __pars_spans_text(self):
         spans = self.soup.find_all("b")
