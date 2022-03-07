@@ -103,7 +103,7 @@ class VKBot:
                         if ("action" in event.obj["message"]) and ("type" in event.obj["message"]["action"]):
                             # Действие при добавлении бота в беседу
                             if event.obj["message"]["action"]["type"] == "chat_invite_user" and \
-                                    event.obj["message"]["action"]["member_id"] == -GROUP_ID:
+                               event.obj["message"]["action"]["member_id"] == -self.group_id:
                                 logger.debug(f"Бот добавлен в {peer_id}")
 
                                 self.send(peer_id, BOT_ADD_TEXT)
