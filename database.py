@@ -6,9 +6,9 @@ logger = log.get_logger(__name__)
 
 
 class DataBase:
-    def __init__(self, database):
+    def __init__(self, database, check_same_thread=True):
         self.db = database
-        self.connection = sqlite3.connect(self.db)
+        self.connection = sqlite3.connect(self.db, check_same_thread=check_same_thread)
         self.cursor = self.connection.cursor()
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS groups(
                                peer_id INT PRIMARY KEY,
