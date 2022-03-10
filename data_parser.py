@@ -173,12 +173,17 @@ class Parser:
         table = [[cell for cell in line] for line in table]
 
         for line in table:
+
+            line[0] = line[0].replace("-–", "-").replace(" ", "")
+            line[0] = "-".join("0" + spl if len(spl) <= 4 else spl for spl in line[0].split("-"))
+
             if len(line) == 2:
                 if "КАБ" in line[1]:
                     splited = line[1].split('КАБ')
 
-                    title = splited[0].strip()
-                    cab_number = splited[1].strip().replace(".", "")
+                    title = splited[0].replace("(", "").strip()
+
+                    cab_number = splited[1].replace(")", "").replace(".", "").strip()
 
                     line[1] = title
                     line.append(cab_number)
@@ -200,6 +205,7 @@ class Parser:
                 else:
                     line.append("")
 
+        # если в клетке названия группы есть что то кроме группы оно переносится в другую колонку
         table[0][1] = table[0][1].replace(' ', "")
         first_line = table[0][1].split(" ")
         table[0][1] = first_line[0]
