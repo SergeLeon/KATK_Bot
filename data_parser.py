@@ -83,7 +83,6 @@ class Parser:
 
     def _pars_today_tables(self):
         tables = self.soup.find_all("table")
-        groups = []
 
         text_lines = []
         for table in tables:
@@ -94,9 +93,7 @@ class Parser:
 
                 texts = []
                 for cell in cells:
-                    text = ""
-
-                    text += cell.text.upper()
+                    text = cell.text.upper()
 
                     # Привод значений в понятный вид
                     text = text.strip("\n")
@@ -106,8 +103,11 @@ class Parser:
                         "ЭТОТ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ ЗАЩИЩЕН ОТ СПАМ-БОТОВ. У ВАС ДОЛЖЕН БЫТЬ ВКЛЮЧЕН JAVASCRIPT ДЛЯ "
                         "ПРОСМОТРА.",
                         "ПОЧТА НА САЙТЕ.")
-                    text = text.strip()
 
+                    while "  " in text:
+                        text = text.replace("  ", " ")
+
+                    text = text.strip()
                     # Поиск и вставка ссылки/ок
                     cell_a = cell.find_all("a")
                     if cell_a:
@@ -119,14 +119,8 @@ class Parser:
 
                     texts.append(text)
 
-                if texts[1] in groups:
-                    break
-                else:
-                    if not (texts.count("") == len(texts) or texts.count([]) == len(texts)):
-                        text = texts[1]
-                        if "ГРУППА" in text:
-                            groups.append(text)
-                        text_lines.append(texts)
+                if texts.count("") != len(texts) and texts.count([]) != len(texts):
+                    text_lines.append(texts)
 
         return text_lines
 
@@ -224,6 +218,22 @@ class Parser:
 
                 group_tables.append(table)
 
+        return self._delete_duplicates(group_tables)
+    
+    @staticmethod
+    def _delete_duplicates(tables):
+        group_tables = []
+        groups = []
+        
+        for num, table in enumerate(tables):
+            if num == len(tables)-1:
+                num -= 1
+            if table[0][1] in groups and tables[num+1][0][1] in groups:
+                break
+
+            groups.append(table[0][1])
+            group_tables.append(table)
+        
         return group_tables
 
     def get_tables(self):
