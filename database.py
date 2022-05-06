@@ -60,5 +60,9 @@ if __name__ == '__main__':
     db = DataBase("database.db")
     db.cursor.execute("SELECT * FROM groups;")
     res = db.cursor.fetchall()
+    b = set()
     for i in res:
-        print(i)
+        info = db.get_by_peer_id(i[0])
+        b.add(info["name"])
+        print(info)
+    print(len(b), b)

@@ -100,8 +100,7 @@ class Parser:
                     text = text.replace("\n", " ")
                     text = text.replace(u"\xa0", "")
                     text = text.replace(
-                        "ЭТОТ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ ЗАЩИЩЕН ОТ СПАМ-БОТОВ. У ВАС ДОЛЖЕН БЫТЬ ВКЛЮЧЕН JAVASCRIPT ДЛЯ "
-                        "ПРОСМОТРА.",
+                        "ЭТОТ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ ЗАЩИЩЕН ОТ СПАМ-БОТОВ. У ВАС ДОЛЖЕН БЫТЬ ВКЛЮЧЕН JAVASCRIPT ДЛЯ ПРОСМОТРА.",
                         "ПОЧТА НА САЙТЕ.")
 
                     while "  " in text:
@@ -142,8 +141,7 @@ class Parser:
         for table in tables:
 
             for group_num in range(1, len(table[0])):
-                group_tables.append(
-                    [[line[0][:5] + "-" + line[0][-5:], line[group_num]] for line in table])
+                group_tables.append([[line[0], line[group_num]] for line in table])
 
         return group_tables
 
@@ -168,36 +166,30 @@ class Parser:
 
         for line in table:
 
-            line[0] = line[0].replace("-–", "-").replace(" ", "")
-            line[0] = "-".join("0" + spl if len(spl) <= 4 else spl for spl in line[0].split("-"))
-
             if len(line) == 2:
-                if "КАБ" in line[1]:
-                    splited = line[1].split('КАБ')
-
-                    title = splited[0].replace("(", "").strip()
-
-                    cab_number = splited[1].replace(")", "").replace(".", "").strip()
-
-                    line[1] = title
-                    line.append(cab_number)
-
-                elif "http" in line[1]:
+                titles = []
+                additions = []
+                if "http" in line[1]:
                     splited = line[1].split()
 
-                    titles = []
-                    links = []
                     for word in splited:
                         if "http" in word:
-                            links.append(word)
+                            additions.append(word)
                         else:
                             titles.append(word.strip())
 
                     line[1] = " ".join(titles)
-                    line.append(" ".join(links))
 
-                else:
-                    line.append("")
+                if "КАБ" in line[1]:
+                    splited = line[1].split('КАБ')
+
+                    title = splited[0].replace("(", "").strip()
+                    cabinet_number = splited[1].replace(")", "").replace(".", "").strip()
+
+                    line[1] = title
+                    additions.insert(0, cabinet_number)
+
+                line.append(" ".join(additions))
 
         # если в клетке названия группы есть что то кроме группы оно переносится в другую колонку
         table[0][1] = table[0][1].replace(' ', "")
@@ -302,10 +294,17 @@ class Parser:
         # Глубокое копирование для избежания внешнего изменения таблицы
         table = [[cell if "http" in cell else cell.title() for cell in line] for line in table]
 
+        for line in table[1:]:
+            line[0] = line[0].replace("–", "-").replace(" ", "")
+            splited = line[0].split("-")
+            line[0] = "-".join(spl.zfill(5) for spl in (splited[0], splited[-1]))
+
         if table[0][1]:
             table[0][1] = f"{table[0][1]} Группа"
 
-        column_width = self.__column_width_by_table(table)
+        # column_width = self.__column_width_by_table(table)
+        # Из за кривого отображения в ВК пробелы то сжираются то добавляют лишние переводы строк
+        column_width = [0, 0, 0]
 
         if style_id == 0:
             table_str = self.__theme_0(table, column_width)

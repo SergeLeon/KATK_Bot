@@ -83,6 +83,9 @@ class Main:
                             if group_info["name"] in updated_groups:
                                 self.events.send_table.append(group_info["peer_id"])
 
+                else:
+                    logger.warning("Парсер ничего не вернул")
+
             except:
                 logger.exception('')
 

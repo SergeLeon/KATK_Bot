@@ -33,8 +33,11 @@ class VKBot:
             if exc.code == 7:
                 # код 7 - бот удален из беседы
                 self.events.delete_group.append(peer_id)
+            elif exc.code == 901:
+                # код 901 - пользователь ограничил число лиц которые могут ему писать
+                self.events.delete_group.append(peer_id)
             else:
-                logger.warning(f"При отправке произошла ошибка:\n{exc}")
+                logger.warning(f"При отправке {peer_id} произошла ошибка:\n{exc}")
 
     def reconnect(self, recon_max=5, recon_time=60, count=1):
         if count == 1:
@@ -84,7 +87,7 @@ class VKBot:
                                 self.send(peer_id, INFO_TEXT)
 
                             elif msg.startswith("group "):
-                                group_name = msg.replace("group ", "").upper()
+                                group_name = msg.replace("group ", "").upper().replace(" ", "")
                                 self.events.set_group.append([peer_id, group_name])
 
                             elif msg.startswith("style "):
