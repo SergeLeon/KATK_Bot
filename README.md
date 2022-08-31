@@ -1,4 +1,4 @@
-# KATK_VKBot
+# KATK_Bot
 
 [Бот в ВК](https://vk.com/katk44bot) <br>
 [Руководство пользователя](https://vk.com/@katk44bot-rukovodstvo-polzovatelya)
