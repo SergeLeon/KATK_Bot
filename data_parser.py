@@ -1,87 +1,118 @@
-from time import sleep
+from typing import Iterable
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup as bs
+from bs4.element import Tag
 from fake_useragent import UserAgent
+from requests.exceptions import ReadTimeout, ConnectionError
+from time import sleep
 
-WEEKDAYS = ["понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
+NUMBERS = "0123456789"
+
+table_type = list[list[str]]
+
+
+def _find_inclusion(string: str, inclusions: Iterable[str]) -> str:
+    """
+    Возвращает первое найденное в строке включение или пустую строку, если включений не найдено.
+    """
+    for inclusion in inclusions:
+        if inclusion in string:
+            return inclusion
+    return ""
+
+
+def _clear_str(string: str) -> str:
+    string = string.replace("\n", " ")
+    string = string.replace(u"\xa0", "")
+
+    while "  " in string:
+        string = string.replace("  ", " ")
+
+    string = string.strip()
+
+    return string
+
+
+def _get_link(a: Tag, domain: str) -> str:
+    link = a.get("href")
+    if "http" not in link:
+        link = f"http://{domain}{link}"
+    return link
 
 
 class Parser:
-    def __init__(self, url):
-        self.ua = UserAgent(use_cache_server=False)
+    def __init__(self, url: str):
+        self.ua = UserAgent()
         self.url = url
+        self.domain = urlparse(self.url).netloc
         self.session = requests.Session()
         self.soup = bs()
         self.date = ""
         self.update()
 
-    def update(self, recon_max=5, recon_time=60, count=1):
+    def update(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         try:
             self.session.headers.update({'User-Agent': self.ua.random})
             response = self.session.get(self.url, timeout=5).content
             self.soup = bs(response, "html.parser")
             self._update_date()
-        except:
+
+        except (ReadTimeout, ConnectionError):
             count += 1
 
-            if count % (recon_max*4) == 0:
-                sleep(recon_time*120)
-            elif count % (recon_max*2) == 0:
-                sleep(recon_time*10)
+            if count % (recon_max * 4) == 0:
+                sleep(recon_time * 120)
+            elif count % (recon_max * 2) == 0:
+                sleep(recon_time * 10)
             elif count % recon_max == 0:
                 sleep(recon_time)
 
             sleep(recon_time // 10)
-            self.update(count=count)
-
-    @staticmethod
-    def _have_num(string):
-        numbers = "0123456789"
-        for char in string:
-            if char in numbers:
-                return True
-        return False
-
-    @staticmethod
-    def _find_weekday(string):
-        for day in WEEKDAYS:
-            if day in string:
-                return day
-        return ""
+            self.update(recon_max=recon_max, recon_time=recon_time, count=count)
 
     def _update_date(self):
-        strings = self.__pars_spans_text()
+        strings = self._pars_spans_text()
         for string in strings:
             string = string.lower()
 
-            day = self._find_weekday(string)
+            day = _find_inclusion(string, WEEKDAYS)
             if day:
                 texts_words = string.split()
                 date = ""
 
                 # Отделение строк с информацией
                 for word in texts_words:
-                    if day in word or self._have_num(word):
+                    if day in word or _find_inclusion(word, NUMBERS):
                         date += word
 
-                date = date.title()
-
+                self.date = date.title()
                 break
 
-        else:
-            date = ""
-
-        self.date = date
-
-    def get_date(self):
+    def get_date(self) -> str:
         return self.date
 
-    @staticmethod
-    def tables_to_group_names(tables):
-        return [table[0][1].replace("(ДИСТ)", "") for table in tables]
+    def _get_cell_text(self, cell: Tag) -> str:
+        text = cell.text.upper()
 
-    def _pars_today_tables(self):
+        text = _clear_str(text)
+
+        text = text.replace(
+            "ЭТОТ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ ЗАЩИЩЕН ОТ СПАМ-БОТОВ. У ВАС ДОЛЖЕН БЫТЬ ВКЛЮЧЕН JAVASCRIPT ДЛЯ ПРОСМОТРА.",
+            "ПОЧТА НА САЙТЕ.")
+
+        # Поиск и вставка ссылки/ок
+        cell_a = cell.find_all("a")
+        if cell_a:
+            for a in cell_a:
+                link = _get_link(a=a, domain=self.domain)
+                text += " " + link
+
+        return text
+
+    def _pars_today_tables(self) -> table_type:
         tables = self.soup.find_all("table")
 
         text_lines = []
@@ -91,40 +122,15 @@ class Parser:
             for line in lines:
                 cells = line.find_all("td")
 
-                texts = []
-                for cell in cells:
-                    text = cell.text.upper()
+                texts = [self._get_cell_text(cell) for cell in cells]
 
-                    # Привод значений в понятный вид
-                    text = text.strip("\n")
-                    text = text.replace("\n", " ")
-                    text = text.replace(u"\xa0", "")
-                    text = text.replace(
-                        "ЭТОТ АДРЕС ЭЛЕКТРОННОЙ ПОЧТЫ ЗАЩИЩЕН ОТ СПАМ-БОТОВ. У ВАС ДОЛЖЕН БЫТЬ ВКЛЮЧЕН JAVASCRIPT ДЛЯ ПРОСМОТРА.",
-                        "ПОЧТА НА САЙТЕ.")
-
-                    while "  " in text:
-                        text = text.replace("  ", " ")
-
-                    text = text.strip()
-                    # Поиск и вставка ссылки/ок
-                    cell_a = cell.find_all("a")
-                    if cell_a:
-                        for a in cell_a:
-                            link = a.get("href")
-                            if "http" not in link:
-                                link = f"https://katt44.ru{link}"
-                            text += " " + link
-
-                    texts.append(text)
-
-                if texts.count("") != len(texts) and texts.count([]) != len(texts):
+                if any(texts):
                     text_lines.append(texts)
 
         return text_lines
 
     @staticmethod
-    def _split_table_by_lines(text_table):
+    def _split_table_by_lines(text_table: table_type) -> list[table_type]:
         last_line = 0
         new_tables = []
         for line_num, line in enumerate(text_table):
@@ -136,7 +142,7 @@ class Parser:
         return new_tables[1:]
 
     @staticmethod
-    def _split_tables_by_columns(tables):
+    def _split_tables_by_columns(tables: list[table_type]) -> list[table_type]:
         group_tables = []
         for table in tables:
 
@@ -145,12 +151,12 @@ class Parser:
 
         return group_tables
 
-    def _split_table(self, table):
+    def _split_table(self, table: table_type) -> list[table_type]:
         return self._split_tables_by_columns(
-               self._split_table_by_lines(table))
+            self._split_table_by_lines(table))
 
     @staticmethod
-    def _delete_uninformative_table_lines(table):
+    def _delete_uninformative_table_lines(table: table_type) -> table_type:
         table = [[cell for cell in line] for line in table]
 
         for line in table[::-1]:
@@ -161,7 +167,7 @@ class Parser:
         return table
 
     @staticmethod
-    def _reformat_table(table):
+    def _reformat_table(table: table_type) -> table_type:
         table = [[cell for cell in line] for line in table]
 
         for line in table:
@@ -191,7 +197,7 @@ class Parser:
 
                 line.append(" ".join(additions))
 
-        # если в клетке названия группы есть что то кроме группы оно переносится в другую колонку
+        # если в клетке названия группы есть что-то, кроме группы оно переносится в другую колонку.
         table[0][1] = table[0][1].replace(' ', "")
         first_line = table[0][1].split(" ")
         table[0][1] = first_line[0]
@@ -200,7 +206,7 @@ class Parser:
 
         return table
 
-    def _tables_to_group_tables(self, tables):
+    def _tables_to_group_tables(self, tables: list[table_type]) -> list[table_type]:
         group_tables = []
 
         for table in tables:
@@ -211,126 +217,50 @@ class Parser:
                 group_tables.append(table)
 
         return self._delete_duplicates(group_tables)
-    
+
     @staticmethod
-    def _delete_duplicates(tables):
+    def _delete_duplicates(tables: list[table_type]) -> list[table_type]:
         group_tables = []
         groups = []
-        
+
         for num, table in enumerate(tables):
-            if num == len(tables)-1:
+            if num == len(tables) - 1:
                 num -= 1
-            if table[0][1] in groups and tables[num+1][0][1] in groups:
+            if table[0][1] in groups and tables[num + 1][0][1] in groups:
                 break
 
             groups.append(table[0][1])
             group_tables.append(table)
-        
+
         return group_tables
 
-    def get_tables(self):
+    def get_tables(self) -> list[table_type]:
         return self._tables_to_group_tables(
                self._split_table(
                self._pars_today_tables()))
 
-    def __pars_spans_text(self):
+    def _pars_spans_text(self) -> list:
         spans = self.soup.find_all("b")
         spans_text = [span.text for span in spans]
         return spans_text
 
-    @staticmethod
-    def __theme_0(table, column_width):
-        table_str = ""
-        for line_num, line in enumerate(table):
-            for cell_num, cell in enumerate(line):
-
-                if not (line_num == 0 and cell_num == 0):
-                    if line_num == 0 and cell_num == 1:
-                        table_str += cell.ljust((column_width[cell_num] + column_width[cell_num - 1] + 3), " ")
-                    else:
-                        table_str += cell.ljust(column_width[cell_num], " ")
-
-                    if not cell == line[-1]:
-                        table_str += " | "
-
-            table_str += "\n"
-        return table_str
-
-    @staticmethod
-    def __theme_1(table, column_width):
-        table_str = ""
-        for line_num, line in enumerate(table):
-            for cell_num, cell in enumerate(line):
-
-                if not (line_num == 0 and cell_num == 0):
-                    if cell_num == 0:
-                        table_str += str(line_num)
-
-                    elif line_num == 0 and cell_num == 1:
-                        table_str += cell.ljust((column_width[cell_num] + 4), " ")
-
-                    else:
-                        table_str += cell.ljust(column_width[cell_num], " ")
-
-                    if not cell == line[-1]:
-                        table_str += " | "
-
-            table_str += "\n"
-        return table_str
-
-    @staticmethod
-    def __column_width_by_table(table):
-        column_width = []
-        for column in range(len(table[0])):
-            max_width = 0
-            for line in table[1:]:
-                width = len(line[column])
-                if width > max_width:
-                    max_width = width
-            column_width.append(max_width)
-        return column_width
-
-    def table_to_str(self, table, style_id: int = 0):
-        # Глубокое копирование для избежания внешнего изменения таблицы
-        table = [[cell if "http" in cell else cell.title() for cell in line] for line in table]
-
-        for line in table[1:]:
-            line[0] = line[0].replace("–", "-").replace(" ", "")
-            splited = line[0].split("-")
-            line[0] = "-".join(spl.zfill(5) for spl in (splited[0], splited[-1]))
-
-        if table[0][1]:
-            table[0][1] = f"{table[0][1]} Группа"
-
-        # column_width = self.__column_width_by_table(table)
-        # Из за кривого отображения в ВК пробелы то сжираются то добавляют лишние переводы строк
-        column_width = [0, 0, 0]
-
-        if style_id == 0:
-            table_str = self.__theme_0(table, column_width)
-        elif style_id == 1:
-            table_str = self.__theme_1(table, column_width)
-        else:
-            table_str = self.__theme_0(table, column_width)
-
-        date = self.get_date()
-        table_str = date + "\n" + table_str
-
-        if table_str.count("\n") <= 2:
-            table_str += "Пар нет\n"
-
-        return table_str
-
 
 if __name__ == '__main__':
     import time
+    from config import URL
+    from table_formatter import table_to_str, tables_to_group_names
 
     start_time = time.time()
 
-    pars = Parser("http://www.katt44.ru/index.php?option=com_content&view=article&id=252&Itemid=129")
-    tabl = pars.get_tables()
-    for i in tabl:
-        print(pars.table_to_str(i))
-    print(pars.tables_to_group_names(tabl))
+    pars = Parser(URL)
+    tabls = pars.get_tables()
+    for tabl in tabls:
+        print(table_to_str(table=tabl,
+                           style_id=0,
+                           date=pars.get_date(),
+                           consider_column_width=True))
+
+    names = tables_to_group_names(tabls)
+    print(len(names), names)
 
     print("--- %s seconds ---" % (time.time() - start_time))

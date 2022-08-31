@@ -3,9 +3,10 @@ from threading import Thread
 from time import sleep
 
 import logger as log
-from config import *
-from data_parser import Parser
+from config import VK_TOKEN, URL, CHECK_TIME
+from data_parser import Parser, table_type
 from database import DataBase
+from table_formatter import table_to_str, tables_to_group_names, STYLES
 from vk_bot import VKBot
 
 
@@ -24,23 +25,24 @@ logger = log.setup_applevel_logger()
 class Main:
     def __init__(self):
         self.events = Events()
-        self.bot = VKBot(token=TOKEN, group_id=GROUP_ID, events=self.events)
+        self.bot = VKBot(token=VK_TOKEN, events=self.events)
         self.pars = Parser(URL)
         # хранит расписание
-        self.tables = []
+        self.tables: list = []
         # хранит названия групп
-        self.group_names = []
+        self.group_names: list = []
         # хранит дату
-        self.tables_date = ""
+        self.tables_date: str = ""
         self.update()
 
+        # check_same_thread отключен т.к. только event_loop пишет в базу.
         self.db = DataBase("database.db", check_same_thread=False)
 
         logger.info("Приложение инициализировано")
 
     def update(self):
         self.tables = self.pars.get_tables()
-        self.group_names = self.pars.tables_to_group_names(self.tables)
+        self.group_names = tables_to_group_names(self.tables)
         self.tables_date = self.pars.get_date()
 
     def parsing_loop(self):
@@ -53,7 +55,7 @@ class Main:
 
                 new_tables = self.pars.get_tables()
                 # Проверка на существование информации
-                if self.pars.tables_to_group_names(new_tables):
+                if tables_to_group_names(new_tables):
                     old_tables = self.tables
 
                     new_tables.sort(key=lambda table: table[0][1])
@@ -89,27 +91,31 @@ class Main:
             except:
                 logger.exception('')
 
-            sleep(240)
+            sleep(CHECK_TIME)
 
-    def __find_group_name(self, finding_group):
+    def _find_group_name(self, finding_group: str) -> str | bool:
         for group in self.group_names:
             if finding_group in group:
                 return group
         return False
 
-    def __find_group_table(self, group_name):
+    def _find_group_table(self, group_name: str) -> table_type:
         for table in self.tables:
             if table[0][1] == group_name:
                 return table
 
-    def __bot_send_table(self, peer_id, group_name, style_id):
-        self.bot.send(peer_id=peer_id, text=self.pars.table_to_str(
-            self.__find_group_table(group_name), style_id=style_id))
+    def _bot_send_table(self, peer_id: int, group_name: str, style_id: int):
+        self.bot.send(peer_id=peer_id,
+                      message=table_to_str(
+                          table=self._find_group_table(group_name),
+                          style_id=style_id,
+                          date=self.pars.get_date(),
+                          consider_column_width=False))
 
     def __set_group(self, event):
         peer_id, group_name = event
 
-        norm_group = self.__find_group_name(group_name)
+        norm_group = self._find_group_name(group_name)
         if bool(norm_group):
 
             if self.db.get_by_peer_id(peer_id):
@@ -117,10 +123,10 @@ class Main:
             else:
                 self.db.add_group(peer_id=peer_id, group_name=norm_group)
 
-            self.bot.send(peer_id=peer_id, text=f"Группа изменена на {norm_group.replace('ГРУППА', '')}.")
+            self.bot.send(peer_id=peer_id, message=f"Группа изменена на {norm_group}.")
 
         else:
-            self.bot.send(peer_id=peer_id, text=f"Группа {group_name} не найдена.")
+            self.bot.send(peer_id=peer_id, message=f"Группа {group_name} не найдена.")
 
     def __set_style(self, event):
         peer_id, style_id = event
@@ -129,41 +135,48 @@ class Main:
 
             if self.db.get_by_peer_id(peer_id):
                 self.db.set_by_peer_id(peer_id=peer_id, field="style_id", value=style_id)
-                self.bot.send(peer_id=peer_id, text=f"Стиль изменен на: {style_id}")
+                self.bot.send(peer_id=peer_id, message=f"Стиль изменен на: {style_id}")
             else:
                 self.bot.send(peer_id=peer_id,
-                              text="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы")
+                              message="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы.")
         else:
-            self.bot.send(peer_id=peer_id, text="Стиль не найден")
+            self.bot.send(peer_id=peer_id, message="Стиль не найден")
 
-    def __set_adv(self, peer_id):
+    def __set_adv(self, peer_id: int):
         group_info = self.db.get_by_peer_id(peer_id)
         if group_info:
             group_adv = not group_info["adv"]
             self.db.set_by_peer_id(peer_id=peer_id, field="adv", value=group_adv)
 
             if group_adv:
-                self.bot.send(peer_id=peer_id, text=f"Оповещения включены.")
+                self.bot.send(peer_id=peer_id, message=f"Оповещения включены.")
             else:
-                self.bot.send(peer_id=peer_id, text=f"Оповещения отключены.")
+                self.bot.send(peer_id=peer_id, message=f"Оповещения отключены.")
         else:
             self.bot.send(peer_id=peer_id,
-                          text="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы")
+                          message="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы.")
 
-    def __send_table(self, peer_id):
+    def __send_table(self, peer_id: int):
         group_info = self.db.get_by_peer_id(peer_id)
         if self.tables and self.group_names:
-            if group_info and (group_info["name"] in self.group_names):
-                self.__bot_send_table(peer_id=group_info["peer_id"],
-                                      group_name=group_info["name"],
-                                      style_id=group_info["style_id"])
+            if group_info:
+                if group_info["name"] in self.group_names:
+                    self._bot_send_table(peer_id=group_info["peer_id"],
+                                         group_name=group_info["name"],
+                                         style_id=group_info["style_id"])
+                else:
+                    self.bot.send(peer_id=peer_id,
+                                  message=f"Группа {group_info['name']} не найдена,\n"
+                                          f"необходимо задать группу используя\n"
+                                          f"/sl group имя_группы.")
             else:
                 self.bot.send(peer_id=peer_id,
-                              text="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы")
+                              message="Возникла ошибка, необходимо задать группу используя\n"
+                                      "/sl group имя_группы.")
         else:
-            self.bot.send(peer_id=peer_id, text="Информация отсутствует")
+            self.bot.send(peer_id=peer_id, message="Информация отсутствует")
 
-    def __delete_group(self, peer_id):
+    def __delete_group(self, peer_id: int):
         self.db.delete_by_peer_id(peer_id=peer_id)
 
     def event_loop(self):
@@ -204,8 +217,8 @@ class Main:
     def run(self):
         logger.info("Запуск циклов")
 
-        bot = Thread(target=self.bot.main_loop, daemon=True)
-        bot.start()
+        vk_bot_loop = Thread(target=self.bot.main_loop, daemon=True)
+        vk_bot_loop.start()
 
         event_loop = Thread(target=self.event_loop)
         event_loop.start()

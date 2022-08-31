@@ -6,9 +6,9 @@ logger = log.get_logger(__name__)
 
 
 class DataBase:
-    def __init__(self, database, check_same_thread=True):
+    def __init__(self, database, **connect_kwargs):
         self.db = database
-        self.connection = sqlite3.connect(self.db, check_same_thread=check_same_thread)
+        self.connection = sqlite3.connect(self.db, **connect_kwargs)
         self.cursor = self.connection.cursor()
         self.cursor.execute("""CREATE TABLE IF NOT EXISTS groups(
                                peer_id INT PRIMARY KEY,
@@ -17,17 +17,17 @@ class DataBase:
                                style_id INT);""")
         self.connection.commit()
 
-    def reconnect(self):
+    def reconnect(self, **connect_kwargs):
         logger.info("Подключение к базе данных")
-        self.connection = sqlite3.connect(self.db)
+        self.connection = sqlite3.connect(self.db, **connect_kwargs)
         self.cursor = self.connection.cursor()
 
-    def add_group(self, peer_id, group_name, adv=1, style_id=0):
+    def add_group(self, peer_id, group_name: str, adv: int = 1, style_id: int = 0):
         self.cursor.execute("INSERT INTO groups VALUES(?, ?, ?, ?);", (peer_id, group_name, adv, style_id))
         self.connection.commit()
         logger.debug(f"Для {peer_id} создано group с name: {group_name}")
 
-    def set_by_peer_id(self, peer_id, field, value):
+    def set_by_peer_id(self, peer_id: int, field: str, value):
         self.cursor.execute(f"UPDATE groups SET {field}=? WHERE peer_id=?;", (value, peer_id))
         self.connection.commit()
         logger.debug(f"Для {peer_id} установлено {field}: {value}")
@@ -39,7 +39,7 @@ class DataBase:
                 "adv": user_info[2],
                 "style_id": user_info[3]}
 
-    def get_by_peer_id(self, peer_id):
+    def get_by_peer_id(self, peer_id: int):
         self.cursor.execute("SELECT * from groups WHERE peer_id=?;", (peer_id,))
         result = self.cursor.fetchone()
         if result:
@@ -50,7 +50,7 @@ class DataBase:
         self.cursor.execute("SELECT * from groups WHERE adv=1;")
         return [self.__list_to_dict(info) for info in self.cursor.fetchall()]
 
-    def delete_by_peer_id(self, peer_id):
+    def delete_by_peer_id(self, peer_id: int):
         self.cursor.execute(f"DELETE FROM groups WHERE peer_id=?;", (peer_id,))
         self.connection.commit()
         logger.debug(f"Информация о {peer_id} удалена")
