@@ -95,11 +95,11 @@ class Main:
 
             sleep(CHECK_TIME)
 
-    def _find_group_name(self, finding_group: str) -> str | bool:
+    def _find_group_name(self, finding_group: str) -> str:
         for group in self.group_names:
             if finding_group in group:
                 return group
-        return False
+        return ""
 
     def _find_group_table(self, group_name: str) -> table_type:
         for table in self.tables:
