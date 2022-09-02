@@ -1,8 +1,10 @@
-from dataclasses import dataclass
 from threading import Thread
 from time import sleep
 
+from dataclasses import dataclass
+
 import logger as log
+import text
 from config import VK_TOKEN, URL, CHECK_TIME
 from data_parser import Parser, table_type
 from database import DataBase
@@ -123,10 +125,10 @@ class Main:
             else:
                 self.db.add_group(peer_id=peer_id, group_name=norm_group)
 
-            self.bot.send(peer_id=peer_id, message=f"Группа изменена на {norm_group}.")
+            self.bot.send(peer_id=peer_id, message=text.GROUP_CHANGED_TO.format(group=norm_group))
 
         else:
-            self.bot.send(peer_id=peer_id, message=f"Группа {group_name} не найдена.")
+            self.bot.send(peer_id=peer_id, message=text.GROUP_NOT_FOUND.format(group=group_name))
 
     def __set_style(self, event):
         peer_id, style_id = event
@@ -135,12 +137,11 @@ class Main:
 
             if self.db.get_by_peer_id(peer_id):
                 self.db.set_by_peer_id(peer_id=peer_id, field="style_id", value=style_id)
-                self.bot.send(peer_id=peer_id, message=f"Стиль изменен на: {style_id}")
+                self.bot.send(peer_id=peer_id, message=text.STYLE_CHANGED_TO.format(style=style_id))
             else:
-                self.bot.send(peer_id=peer_id,
-                              message="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы.")
+                self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
         else:
-            self.bot.send(peer_id=peer_id, message="Стиль не найден")
+            self.bot.send(peer_id=peer_id, message=text.STYLE_NOT_FOUND.format(style=style_id))
 
     def __set_adv(self, peer_id: int):
         group_info = self.db.get_by_peer_id(peer_id)
@@ -149,12 +150,11 @@ class Main:
             self.db.set_by_peer_id(peer_id=peer_id, field="adv", value=group_adv)
 
             if group_adv:
-                self.bot.send(peer_id=peer_id, message=f"Оповещения включены.")
+                self.bot.send(peer_id=peer_id, message=text.ADVERTS_ON)
             else:
-                self.bot.send(peer_id=peer_id, message=f"Оповещения отключены.")
+                self.bot.send(peer_id=peer_id, message=text.ADVERTS_OFF)
         else:
-            self.bot.send(peer_id=peer_id,
-                          message="Возникла ошибка, необходимо задать группу используя\n/sl group имя_группы.")
+            self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
 
     def __send_table(self, peer_id: int):
         group_info = self.db.get_by_peer_id(peer_id)
@@ -166,15 +166,12 @@ class Main:
                                          style_id=group_info["style_id"])
                 else:
                     self.bot.send(peer_id=peer_id,
-                                  message=f"Группа {group_info['name']} не найдена,\n"
-                                          f"необходимо задать группу используя\n"
-                                          f"/sl group имя_группы.")
+                                  message=f"{text.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
+                                          f"{text.NEED_SELECT_GROUP}")
             else:
-                self.bot.send(peer_id=peer_id,
-                              message="Возникла ошибка, необходимо задать группу используя\n"
-                                      "/sl group имя_группы.")
+                self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
         else:
-            self.bot.send(peer_id=peer_id, message="Информация отсутствует")
+            self.bot.send(peer_id=peer_id, message=text.NO_INFORMATION)
 
     def __delete_group(self, peer_id: int):
         self.db.delete_by_peer_id(peer_id=peer_id)

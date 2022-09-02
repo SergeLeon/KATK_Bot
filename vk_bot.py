@@ -1,12 +1,13 @@
+from time import sleep
+
 import vk_api.exceptions
 from requests.exceptions import ReadTimeout, ConnectionError
-from time import sleep
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType, VkBotEvent
 from vk_api.utils import get_random_id
 
 import logger as log
-from config import BOT_ADD_TEXT, HELP_TEXT, INFO_TEXT, UNKNOWN_TEXT
+import text
 
 logger = log.get_logger(__name__)
 
@@ -96,10 +97,10 @@ class VKBot:
                             msg = msg.replace("/sl ", "")
 
                             if msg.startswith("help"):
-                                self.send(peer_id, HELP_TEXT)
+                                self.send(peer_id, text.HELP_COMMAND)
 
                             elif msg.startswith("info"):
-                                self.send(peer_id, INFO_TEXT)
+                                self.send(peer_id, text.INFO_COMMAND)
 
                             elif msg.startswith("group "):
                                 group_name = msg.replace("group ", "").upper().replace(" ", "")
@@ -116,12 +117,12 @@ class VKBot:
                                 self.events.send_table.append(peer_id)
 
                             else:
-                                self.send(peer_id, UNKNOWN_TEXT)
+                                self.send(peer_id, text.UNKNOWN_COMMAND)
 
                         if _check_member_added(event=event, member_id=-self.group_id):
                             logger.debug(f"Бот добавлен в {peer_id}")
 
-                            self.send(peer_id, BOT_ADD_TEXT)
+                            self.send(peer_id, text.BOT_ADD_EVENT)
                             continue
 
             except (ReadTimeout, ConnectionError):
