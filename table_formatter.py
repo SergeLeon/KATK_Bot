@@ -98,6 +98,9 @@ def table_to_str(table: table_type,
 
     table_str = STYLES.get(style_id, _style_0)(table, column_width)
 
+    if "12.11" in date:
+        date = f"🎂{date}🎂"
+
     table_str = f"{date}\n{table_str}"
 
     if table_str.count("\n") <= 2:
