@@ -69,7 +69,7 @@ def _reformat_time_str(time_str: str) -> str:
     """
     '8:30-9:15 9:20-10:05' >>> '08:30-10:05'
     """
-    time_str = time_str.replace("–", " ").replace("-", " ")
+    time_str = time_str.replace(" ", "").replace("–", " ").replace("-", " ")
     if "  " in time_str:
         time_str = " ".join(time_str.split())
     splited = time_str.split(" ")
