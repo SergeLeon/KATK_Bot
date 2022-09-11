@@ -24,10 +24,13 @@ class VKBot:
     def __init__(self, token, events):
         self.events = events
         self.token = token
-        self.vk_session = VkApi(token=token)
-        self.group_id = self.get_group_id()
-        self.longpoll = VkBotLongPoll(self.vk_session, self.group_id)
-        self.vk = self.vk_session.get_api()
+        try:
+            self.vk_session = VkApi(token=token)
+            self.group_id = self.get_group_id()
+            self.longpoll = VkBotLongPoll(self.vk_session, self.group_id)
+            self.vk = self.vk_session.get_api()
+        except (ReadTimeout, ConnectionError):
+            self.reconnect()
 
     def get_group_id(self) -> int:
         group_info = self.vk_session.method("groups.getById")[0]
@@ -57,6 +60,7 @@ class VKBot:
             logger.info(f"Соединение разорвано")
         try:
             self.vk_session = VkApi(token=self.token)
+            self.group_id = self.get_group_id()
             self.longpoll = VkBotLongPoll(self.vk_session, self.group_id)
             self.vk = self.vk_session.get_api()
 
