@@ -53,6 +53,33 @@ def _style_1(table: table_type, column_width: list[int]) -> str:
     return table_str
 
 
+def _style_2(table: table_type, column_width: list[int]) -> str:
+    """
+    123 Группа              | Каб
+    1 | 01:02-03:04 | Пара1 | 11
+    2 | 12:03-14:05 | Пара2 | 12
+    3 | 13:04-15:06 | Пара3 | 13
+    """
+    table_str = ""
+    for line_num, line in enumerate(table):
+        for cell_num, cell in enumerate(line):
+
+            if not (line_num == 0 and cell_num == 0):
+                if cell_num == 0:
+                    table_str += f"{line_num} | "
+
+                if line_num == 0 and cell_num == 1:
+                    table_str += cell.ljust((column_width[cell_num] + column_width[cell_num - 1] + 7), " ")
+                else:
+                    table_str += cell.ljust(column_width[cell_num], " ")
+
+                if not cell == line[-1]:
+                    table_str += " | "
+
+        table_str += "\n"
+    return table_str
+
+
 def _column_width_by_table(table: table_type) -> list:
     column_width = []
     for column in range(len(table[0])):
@@ -78,7 +105,8 @@ def _reformat_time_str(time_str: str) -> str:
 
 
 STYLES = {0: _style_0,
-          1: _style_1}
+          1: _style_1,
+          2: _style_2, }
 
 
 def table_to_str(table: table_type,
