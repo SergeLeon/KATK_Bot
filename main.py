@@ -4,7 +4,7 @@ from time import sleep
 from dataclasses import dataclass
 
 import logger as log
-import text
+import message_templates
 from config import VK_TOKEN, URL, CHECK_TIME
 from data_parser import Parser, table_type
 from database import DataBase
@@ -125,10 +125,10 @@ class Main:
             else:
                 self.db.add_group(peer_id=peer_id, group_name=norm_group)
 
-            self.bot.send(peer_id=peer_id, message=text.GROUP_CHANGED_TO.format(group=norm_group))
+            self.bot.send(peer_id=peer_id, message=message_templates.GROUP_CHANGED_TO.format(group=norm_group))
 
         else:
-            self.bot.send(peer_id=peer_id, message=text.GROUP_NOT_FOUND.format(group=group_name))
+            self.bot.send(peer_id=peer_id, message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
 
     def __set_style(self, event):
         peer_id, style_id = event
@@ -137,11 +137,11 @@ class Main:
 
             if self.db.get_by_peer_id(peer_id):
                 self.db.set_by_peer_id(peer_id=peer_id, field="style_id", value=style_id)
-                self.bot.send(peer_id=peer_id, message=text.STYLE_CHANGED_TO.format(style=style_id))
+                self.bot.send(peer_id=peer_id, message=message_templates.STYLE_CHANGED_TO.format(style=style_id))
             else:
-                self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
+                self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
         else:
-            self.bot.send(peer_id=peer_id, message=text.STYLE_NOT_FOUND.format(style=style_id))
+            self.bot.send(peer_id=peer_id, message=message_templates.STYLE_NOT_FOUND.format(style=style_id))
 
     def __set_adv(self, peer_id: int):
         group_info = self.db.get_by_peer_id(peer_id)
@@ -150,15 +150,15 @@ class Main:
             self.db.set_by_peer_id(peer_id=peer_id, field="adv", value=group_adv)
 
             if group_adv:
-                self.bot.send(peer_id=peer_id, message=text.ADVERTS_ON)
+                self.bot.send(peer_id=peer_id, message=message_templates.ADVERTS_ON)
             else:
-                self.bot.send(peer_id=peer_id, message=text.ADVERTS_OFF)
+                self.bot.send(peer_id=peer_id, message=message_templates.ADVERTS_OFF)
         else:
-            self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
+            self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
 
     def __send_table(self, peer_id: int):
-        group_info = self.db.get_by_peer_id(peer_id)
         if self.tables and self.group_names:
+            group_info = self.db.get_by_peer_id(peer_id)
             if group_info:
                 if group_info["name"] in self.group_names:
                     self._bot_send_table(peer_id=group_info["peer_id"],
@@ -166,12 +166,12 @@ class Main:
                                          style_id=group_info["style_id"])
                 else:
                     self.bot.send(peer_id=peer_id,
-                                  message=f"{text.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
-                                          f"{text.NEED_SELECT_GROUP}")
+                                  message=f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
+                                          f"{message_templates.NEED_SELECT_GROUP}")
             else:
-                self.bot.send(peer_id=peer_id, message=text.NEED_SELECT_GROUP)
+                self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
         else:
-            self.bot.send(peer_id=peer_id, message=text.NO_INFORMATION)
+            self.bot.send(peer_id=peer_id, message=message_templates.NO_INFORMATION)
 
     def __delete_group(self, peer_id: int):
         self.db.delete_by_peer_id(peer_id=peer_id)

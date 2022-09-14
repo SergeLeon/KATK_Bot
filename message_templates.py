@@ -38,7 +38,7 @@ STYLE_CHANGED_TO = "Стиль изменен на: {style}"
 STYLE_NOT_FOUND = "Стиль {style} не найден."
 
 NEED_SELECT_GROUP = "Необходимо задать группу используя\n" \
-                    "/sl group имя_группы."
+                    "/sl group имя_группы"
 
 ADVERTS_ON = "Оповещения включены."
 
