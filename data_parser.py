@@ -182,15 +182,15 @@ class Parser:
                         if "http" in word:
                             additions.append(word)
                         else:
-                            titles.append(word.strip())
+                            titles.append(word)
 
                     line[1] = " ".join(titles)
 
                 if "КАБ" in line[1]:
-                    splited = line[1].split('КАБ')
+                    splited = line[1].rsplit('КАБ', 1)
 
-                    title = splited[0].replace("(", "").strip()
-                    cabinet_number = splited[1].replace(")", "").replace(".", "").strip()
+                    title = splited[0].rstrip("( ")
+                    cabinet_number = splited[1].strip("). ")
 
                     line[1] = title
                     additions.insert(0, cabinet_number)
@@ -198,10 +198,9 @@ class Parser:
                 line.append(" ".join(additions))
 
         # если в клетке названия группы есть что-то, кроме группы оно переносится в другую колонку.
-        table[0][1] = table[0][1].replace(' ', "")
-        first_line = table[0][1].split(" ")
-        table[0][1] = first_line[0]
-        if len(first_line) > 1:
+        if table[0][1].count(" ") >= 1:
+            first_line = table[0][1].split()
+            table[0][1] = first_line[0]
             table[0][2] += f' {first_line[1]}'
 
         return table
