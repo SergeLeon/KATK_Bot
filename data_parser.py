@@ -201,7 +201,8 @@ class Parser:
         if table[0][1].count(" ") >= 1:
             first_line = table[0][1].split()
             table[0][1] = first_line[0]
-            table[0][2] += f' {first_line[1]}'
+
+            table[0][2] += f' {first_line[1]}' if table[0][2] else first_line[1]
 
         return table
 
