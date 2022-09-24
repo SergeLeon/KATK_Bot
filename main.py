@@ -1,8 +1,7 @@
 from threading import Thread
 from time import sleep
 
-from dataclasses import dataclass
-
+from event import Event
 import logger as log
 import message_templates
 from config import VK_TOKEN, URL, CHECK_TIME
@@ -11,23 +10,13 @@ from database import DataBase
 from table_formatter import table_to_str, tables_to_group_names, STYLES
 from vk_bot import VKBot
 
-
-@dataclass
-class Events:
-    set_group = []
-    set_adv = []
-    set_style = []
-    send_table = []
-    delete_group = []
-
-
 logger = log.setup_applevel_logger()
 
 
 class Main:
     def __init__(self):
-        self.events = Events()
-        self.bot = VKBot(token=VK_TOKEN, events=self.events)
+        self.events = []
+        self.bot = VKBot(service_name="vk", token=VK_TOKEN, events=self.events)
         self.pars = Parser(URL)
         # хранит расписание
         self.tables: list = []
@@ -68,7 +57,8 @@ class Main:
                         logger.info("Все таблицы обновлены")
                         logger.debug(f"Дата: {self.tables_date}")
                         for group_info in self.db.get_adverted():
-                            self.events.send_table.append(group_info["peer_id"])
+                            self.events.append(Event.SEND_TABLE(service=self.bot.service_name,
+                                                                user_id=group_info["peer_id"]))
 
                     elif new_tables != old_tables:
 
@@ -85,8 +75,8 @@ class Main:
 
                         for group_info in self.db.get_adverted():
                             if group_info["name"] in updated_groups:
-                                self.events.send_table.append(group_info["peer_id"])
-
+                                self.events.append(Event.SEND_TABLE(service=self.bot.service_name,
+                                                                    user_id=group_info["peer_id"]))
                 else:
                     logger.warning("Парсер ничего не вернул")
 
@@ -114,9 +104,7 @@ class Main:
                           date=self.pars.get_date(),
                           consider_column_width=False))
 
-    def __set_group(self, event):
-        peer_id, group_name = event
-
+    def __set_group(self, peer_id, group_name):
         norm_group = self._find_group_name(group_name)
         if bool(norm_group):
 
@@ -130,8 +118,7 @@ class Main:
         else:
             self.bot.send(peer_id=peer_id, message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
 
-    def __set_style(self, event):
-        peer_id, style_id = event
+    def __set_style(self, peer_id, style_id):
         if style_id.isnumeric() and (int(style_id) in STYLES):
             style_id = int(style_id)
 
@@ -180,31 +167,35 @@ class Main:
         logger.info("event_loop запущен")
         while True:
             try:
-                # Отлов ивентов на установку группы
-                for event in self.events.set_group:
-                    self.__set_group(event)
-                    self.events.set_group.remove(event)
+                for event in self.events:
+                    event_type = type(event)
 
-                # Отлов ивентов на установку темы
-                for event in self.events.set_style:
-                    self.__set_style(event)
-                    self.events.set_style.remove(event)
+                    if event_type == Event.SET_GROUP:
+                        self.__set_group(
+                            peer_id=event.user_id,
+                            group_name=event.group_name)
 
-                # Отлов ивентов на изменение режима оповещений
-                for peer_id in self.events.set_adv:
-                    self.__set_adv(peer_id)
-                    self.events.set_adv.remove(peer_id)
+                    elif event_type == Event.SET_STYLE:
+                        self.__set_style(
+                            peer_id=event.user_id,
+                            style_id=event.style_id)
 
-                # Отлов ивентов на отправку таблицы
-                for peer_id in self.events.send_table:
-                    self.__send_table(peer_id)
-                    self.events.send_table.remove(peer_id)
+                    elif event_type == Event.SET_ADV:
+                        self.__set_adv(
+                            peer_id=event.user_id)
 
-                # Отлов ивентов на удаление из бд
-                for peer_id in self.events.delete_group:
-                    self.__delete_group(peer_id)
-                    self.events.delete_group.remove(peer_id)
+                    elif event_type == Event.SEND_TABLE:
+                        self.__send_table(
+                            peer_id=event.user_id)
 
+                    elif event_type == Event.DELETE_GROUP:
+                        self.__delete_group(
+                            peer_id=event.user_id)
+
+                    else:
+                        logger.warning(f"Не отлавливаемый event: {event}")
+
+                    self.events.remove(event)
             except:
                 logger.exception('')
 

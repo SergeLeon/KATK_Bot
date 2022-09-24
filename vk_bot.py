@@ -5,6 +5,7 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType, VkBotEvent
 from vk_api.utils import get_random_id
+from event import Event
 
 import logger as log
 import message_templates
@@ -21,7 +22,8 @@ def _check_member_added(event: VkBotEvent, member_id: int) -> bool:
 
 
 class VKBot:
-    def __init__(self, token, events):
+    def __init__(self, service_name, token, events):
+        self.service_name = service_name
         self.events = events
         self.token = token
         try:
@@ -108,17 +110,27 @@ class VKBot:
 
                             elif msg.startswith("group "):
                                 group_name = msg.replace("group ", "").upper().replace(" ", "")
-                                self.events.set_group.append([peer_id, group_name])
+                                self.events.append(Event.SET_GROUP(
+                                    service=self.service_name,
+                                    user_id=peer_id,
+                                    group_name=group_name))
 
                             elif msg.startswith("style "):
                                 style_id = msg.replace("style ", "")
-                                self.events.set_style.append([peer_id, style_id])
+                                self.events.append(Event.SET_STYLE(
+                                    service=self.service_name,
+                                    user_id=peer_id,
+                                    style_id=style_id))
 
                             elif msg.startswith("adv"):
-                                self.events.set_adv.append(peer_id)
+                                self.events.append(Event.SET_ADV(
+                                    service=self.service_name,
+                                    user_id=peer_id))
 
                             elif msg.startswith("table"):
-                                self.events.send_table.append(peer_id)
+                                self.events.append(Event.SEND_TABLE(
+                                    service=self.service_name,
+                                    user_id=peer_id))
 
                             else:
                                 self.send(peer_id, message_templates.UNKNOWN_COMMAND)
@@ -140,5 +152,5 @@ if __name__ == "__main__":
     from config import VK_TOKEN
 
     logger = log.setup_applevel_logger()
-    bot = VKBot(token=VK_TOKEN, events=[])
+    bot = VKBot(token=VK_TOKEN, events=[], service_name="vk")
     bot.main_loop()
