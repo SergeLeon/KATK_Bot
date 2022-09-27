@@ -143,20 +143,37 @@ class Main:
         else:
             self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
 
-    def __send_table(self, peer_id: int):
-        if self.tables and self.group_names:
-            group_info = self.db.get_by_peer_id(peer_id)
-            if group_info:
-                if group_info["name"] in self.group_names:
-                    self._bot_send_table(peer_id=group_info["peer_id"],
-                                         group_name=group_info["name"],
-                                         style_id=group_info["style_id"])
-                else:
-                    self.bot.send(peer_id=peer_id,
-                                  message=f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
-                                          f"{message_templates.NEED_SELECT_GROUP}")
+    def _send_table_by_db(self, peer_id: int):
+        group_info = self.db.get_by_peer_id(peer_id)
+        if group_info:
+            if group_info["name"] in self.group_names:
+                self._bot_send_table(peer_id=group_info["peer_id"],
+                                     group_name=group_info["name"],
+                                     style_id=group_info["style_id"])
             else:
-                self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
+                self.bot.send(peer_id=peer_id,
+                              message=f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
+                                      f"{message_templates.NEED_SELECT_GROUP}")
+        else:
+            self.bot.send(peer_id=peer_id, message=message_templates.NEED_SELECT_GROUP)
+
+    def _send_table_by_group_name(self, peer_id: int, group_name: str = None):
+        norm_group = self._find_group_name(group_name)
+        if bool(norm_group):
+            group_info = self.db.get_by_peer_id(peer_id)
+            style_id = group_info["style_id"] if group_info else 0
+            self._bot_send_table(peer_id=peer_id,
+                                 group_name=norm_group,
+                                 style_id=style_id)
+        else:
+            self.bot.send(peer_id=peer_id, message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
+
+    def __send_table(self, peer_id: int, group_name: str = None):
+        if self.tables and self.group_names:
+            if group_name is None:
+                self._send_table_by_db(peer_id=peer_id)
+            else:
+                self._send_table_by_group_name(peer_id=peer_id, group_name=group_name)
         else:
             self.bot.send(peer_id=peer_id, message=message_templates.NO_INFORMATION)
 
@@ -186,7 +203,8 @@ class Main:
 
                     elif event_type == Event.SEND_TABLE:
                         self.__send_table(
-                            peer_id=event.user_id)
+                            peer_id=event.user_id,
+                            group_name=event.group_name)
 
                     elif event_type == Event.DELETE_GROUP:
                         self.__delete_group(

@@ -128,9 +128,12 @@ class VKBot:
                                     user_id=peer_id))
 
                             elif msg.startswith("table"):
+                                group_name = msg.replace("table", "").upper().replace(" ", "")
+                                group_name = group_name if group_name else None
                                 self.events.append(Event.SEND_TABLE(
                                     service=self.service_name,
-                                    user_id=peer_id))
+                                    user_id=peer_id,
+                                    group_name=group_name))
 
                             else:
                                 self.send(peer_id, message_templates.UNKNOWN_COMMAND)

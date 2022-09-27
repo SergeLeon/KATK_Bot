@@ -18,7 +18,7 @@ SetStyleEvent = namedtuple('SetStyleEvent', BaseEvent._fields + ('style_id',))
 
 SetAdvEvent = namedtuple('SetAdvEvent', BaseEvent._fields)
 
-SendTableEvent = namedtuple('SendTableEvent', BaseEvent._fields)
+SendTableEvent = namedtuple('SendTableEvent', BaseEvent._fields + ('group_name',))
 
 DeleteGroupEvent = namedtuple('DeleteGroupEvent', BaseEvent._fields)
 
