@@ -1,6 +1,6 @@
 import os
 
-VERSION = "1.2.5"
+VERSION = "1.2.6"
 
 VK_TOKEN = os.environ.get('VK_TOKEN')
 

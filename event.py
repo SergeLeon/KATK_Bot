@@ -1,16 +1,16 @@
 """
 Система событий основанная на namedtuple.
 
-Все события должны иметь поля от Event.
+Все события должны иметь поля от BaseEvent.
 Тип события определяется по его классу.
 
 Обязательные поля:
-    service - Наименование сервиса взаимодействия с пользователем (vk, telegram)
+    service_name - Наименование сервиса взаимодействия с пользователем (vk, telegram)
     user_id - Идентификатор пользователя
 """
 from collections import namedtuple
 
-BaseEvent = namedtuple('BaseEvent', ['service', 'user_id'])
+BaseEvent = namedtuple('BaseEvent', ['service_name', 'user_id'])
 
 SetGroupEvent = namedtuple('SetGroupEvent', BaseEvent._fields + ('group_name',))
 

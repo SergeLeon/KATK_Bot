@@ -39,23 +39,29 @@ class VKBot:
         group_id = group_info["id"]
         return group_id
 
-    def send(self, peer_id: int, message: str, **kwargs):
+    def send(self, user_id: int, message: str, **kwargs):
         try:
             random_id = get_random_id()
-            self.vk.messages.send(peer_id=peer_id, message=message, random_id=random_id, **kwargs)
-            logger.debug(f"Для {peer_id} отправлено сообщение")
+            self.vk.messages.send(peer_id=user_id, message=message, random_id=random_id, **kwargs)
+            logger.debug(f"Для {user_id} {self.service_name} отправлено сообщение")
+
         except (ReadTimeout, ConnectionError):
             self.reconnect()
-            self.send(peer_id, message, **kwargs)
+            self.send(user_id, message, **kwargs)
+
         except vk_api.exceptions.ApiError as exc:
             if exc.code == 7:
                 # код 7 - бот удален из беседы
-                self.events.delete_group.append(peer_id)
+                self.events.append(Event.DELETE_GROUP(
+                    service_name=self.service_name,
+                    user_id=user_id))
             elif exc.code == 901:
                 # код 901 - пользователь ограничил число лиц которые могут ему писать
-                self.events.delete_group.append(peer_id)
+                self.events.append(Event.DELETE_GROUP(
+                    service_name=self.service_name,
+                    user_id=user_id))
             else:
-                logger.warning(f"При отправке {peer_id} произошла ошибка:\n{exc}")
+                logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
 
     def reconnect(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         if count == 1:
@@ -83,13 +89,13 @@ class VKBot:
             logger.info(f"Соединение восстановлено спустя {count} попыт(ку/ки/ок)")
 
     def main_loop(self):
-        logger.info("bot_loop запущен")
+        logger.info(f"Сервис {self.service_name} запущен")
         while True:
             try:
                 for event in self.longpoll.listen():
                     if event.type == VkBotEventType.MESSAGE_NEW:
                         msg = event.obj["message"]["text"]
-                        peer_id = event.obj["message"]["peer_id"]
+                        user_id = event.obj["message"]["peer_id"]
 
                         msg = msg.lower().strip()
                         if "  " in msg:
@@ -98,50 +104,50 @@ class VKBot:
                         # Ответ на сообщения
                         if msg.startswith("/sl "):
 
-                            logger.debug(f"От {peer_id} получена команда: {msg}")
+                            logger.debug(f"От {user_id} {self.service_name} получена команда: {msg}")
 
                             msg = msg.replace("/sl ", "")
 
                             if msg.startswith("help"):
-                                self.send(peer_id, message_templates.HELP_COMMAND)
+                                self.send(user_id, message_templates.HELP_COMMAND)
 
                             elif msg.startswith("info"):
-                                self.send(peer_id, message_templates.INFO_COMMAND)
+                                self.send(user_id, message_templates.INFO_COMMAND)
 
                             elif msg.startswith("group "):
                                 group_name = msg.replace("group ", "").upper().replace(" ", "")
                                 self.events.append(Event.SET_GROUP(
-                                    service=self.service_name,
-                                    user_id=peer_id,
+                                    service_name=self.service_name,
+                                    user_id=user_id,
                                     group_name=group_name))
 
                             elif msg.startswith("style "):
                                 style_id = msg.replace("style ", "")
                                 self.events.append(Event.SET_STYLE(
-                                    service=self.service_name,
-                                    user_id=peer_id,
+                                    service_name=self.service_name,
+                                    user_id=user_id,
                                     style_id=style_id))
 
                             elif msg.startswith("adv"):
                                 self.events.append(Event.SET_ADV(
-                                    service=self.service_name,
-                                    user_id=peer_id))
+                                    service_name=self.service_name,
+                                    user_id=user_id))
 
                             elif msg.startswith("table"):
                                 group_name = msg.replace("table", "").upper().replace(" ", "")
                                 group_name = group_name if group_name else None
                                 self.events.append(Event.SEND_TABLE(
-                                    service=self.service_name,
-                                    user_id=peer_id,
+                                    service_name=self.service_name,
+                                    user_id=user_id,
                                     group_name=group_name))
 
                             else:
-                                self.send(peer_id, message_templates.UNKNOWN_COMMAND)
+                                self.send(user_id, message_templates.UNKNOWN_COMMAND)
 
                         if _check_member_added(event=event, member_id=-self.group_id):
-                            logger.debug(f"Бот добавлен в {peer_id}")
+                            logger.debug(f"Бот добавлен в {user_id} {self.service_name}")
 
-                            self.send(peer_id, message_templates.BOT_ADD_EVENT)
+                            self.send(user_id, message_templates.BOT_ADD_EVENT)
                             continue
 
             except (ReadTimeout, ConnectionError):
