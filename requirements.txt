@@ -1,5 +1,6 @@
-beautifulsoup4~=4.10.0
+beautifulsoup4~=4.11.1
 dataclasses~=0.6
 fake-useragent~=0.1.11
-requests~=2.27.1
-vk-api~=11.9.7
+pyTelegramBotAPI~=4.7.0
+requests~=2.28.1
+vk-api~=11.9.9
