@@ -1,8 +1,10 @@
 import os
 
-VERSION = "1.2.6"
+VERSION = "1.2.7"
 
 VK_TOKEN = os.environ.get('VK_TOKEN')
+
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 
 URL = "http://katt44.ru/index.php?option=com_content&view=article&id=252&Itemid=129"
 

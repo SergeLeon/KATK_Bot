@@ -261,6 +261,10 @@ def register_all_services(application: Main):
     from config import VK_TOKEN
     application.register_service(service=VKBot, service_name="vk", token=VK_TOKEN)
 
+    from tg_bot import TelegramBot
+    from config import TELEGRAM_TOKEN
+    application.register_service(service=TelegramBot, service_name="telegram", token=TELEGRAM_TOKEN)
+
 
 if __name__ == '__main__':
     app = Main()

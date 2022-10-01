@@ -1,7 +1,9 @@
 # KATK_Bot
 
 [Бот в ВК](https://vk.com/katk44bot) <br>
-[Руководство пользователя](https://vk.com/@katk44bot-rukovodstvo-polzovatelya)
+[Бот в Telegram](https://t.me/KATK44bot) <br>
+
+[Руководство пользователя в ВК](https://vk.com/@katk44bot-rukovodstvo-polzovatelya)
 
 ### Информация:
 
