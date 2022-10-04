@@ -134,7 +134,7 @@ class Parser:
         last_line = 0
         new_tables = []
         for line_num, line in enumerate(text_table):
-            if "ГРУППА" in line[0]:
+            if "ГРУППА" in line[0] or (not line[0] and "-" in line[1] and "-" in line[3]):
                 new_tables.append(text_table[last_line: line_num])
                 last_line = line_num
         new_tables.append(text_table[last_line: -1])
