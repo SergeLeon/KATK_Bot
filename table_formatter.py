@@ -117,7 +117,8 @@ def table_to_str(table: table_type,
     table = [[cell if "http" in cell else cell.title() for cell in line] for line in table]
 
     for line in table[1:]:
-        line[0] = _reformat_time_str(line[0])
+        if line[0]:
+            line[0] = _reformat_time_str(line[0])
 
     if table[0][1]:
         table[0][1] = f"{table[0][1]} Группа"

@@ -14,6 +14,12 @@ NUMBERS = "0123456789"
 table_type = list[list[str]]
 
 
+def _is_group_name(string: str) -> bool:
+    if string:
+        return "-" in string and string[0].isnumeric()
+    return False
+
+
 def _find_inclusion(string: str, inclusions: Iterable[str]) -> str:
     """
     Возвращает первое найденное в строке включение или пустую строку, если включений не найдено.
@@ -134,7 +140,9 @@ class Parser:
         last_line = 0
         new_tables = []
         for line_num, line in enumerate(text_table):
-            if "ГРУППА" in line[0] or (not line[0] and "-" in line[1] and "-" in line[3]):
+            group_name_in_line = any(_is_group_name(cell) for cell in line[1:])
+            is_group_names_line = "ГРУППА" in line[0] or (not line[0] and group_name_in_line)
+            if is_group_names_line:
                 new_tables.append(text_table[last_line: line_num])
                 last_line = line_num
         new_tables.append(text_table[last_line: -1])
