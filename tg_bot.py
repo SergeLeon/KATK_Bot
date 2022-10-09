@@ -47,6 +47,7 @@ class TelegramBot:
         if count == 1:
             logger.info(f"Соединение разорвано")
         try:
+            self.bot.stop_bot()
             self.bot = TeleBot(self.token)
             self.register_handlers()
             self.bot.get_me()
@@ -76,7 +77,8 @@ class TelegramBot:
 
         logger.debug(f"Бот добавлен в {user_id} {self.service_name}")
 
-        self.send(user_id, message_templates.BOT_ADD_EVENT)
+        self.send(user_id, f"{message_templates.INFO_COMMAND}\n"
+                           f"{message_templates.HELP_COMMAND}")
 
     def handle_message(self, message):
         msg = message.text
