@@ -45,7 +45,9 @@ class VKBot:
             self.vk.messages.send(peer_id=user_id, message=message, random_id=random_id, **kwargs)
             logger.debug(f"Для {user_id} {self.service_name} отправлено сообщение")
 
-        except (ReadTimeout, ConnectionError):
+        except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError) as exc:
+            if isinstance(exc, vk_api.exceptions.ApiHttpError):
+                logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
             self.reconnect()
             self.send(user_id, message, **kwargs)
 
@@ -72,7 +74,10 @@ class VKBot:
             self.longpoll = VkBotLongPoll(self.vk_session, self.group_id)
             self.vk = self.vk_session.get_api()
 
-        except (ReadTimeout, ConnectionError):
+        except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError) as exc:
+            if isinstance(exc, vk_api.exceptions.ApiHttpError):
+                logger.warning(f"При переподключении {self.service_name} произошла ошибка:\n{exc}")
+
             count += 1
 
             if count % (recon_max * 4) == 0:
@@ -150,7 +155,7 @@ class VKBot:
                             self.send(user_id, message_templates.BOT_ADD_EVENT)
                             continue
 
-            except (ReadTimeout, ConnectionError):
+            except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError):
                 self.reconnect()
 
             except:
