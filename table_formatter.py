@@ -142,6 +142,10 @@ def tables_to_group_names(tables: list[table_type]) -> list[str]:
     return [table[0][1] for table in tables]
 
 
+def tables_to_tables_dict(tables: list[table_type]) -> dict:
+    return {table[0][1]: table for table in tables}
+
+
 if __name__ == '__main__':
     tabl = [["ЧАС", "123", "КАБ"],
             ["1:02-02:04 2:05-03:04", "ПАРА1", "11"],

@@ -5,9 +5,9 @@ from event import Event
 import logger as log
 import message_templates
 from config import URL, CHECK_TIME
-from data_parser import Parser, table_type
+from data_parser import Parser
 from database import DataBase
-from table_formatter import table_to_str, tables_to_group_names, STYLES
+from table_formatter import table_to_str, tables_to_group_names, tables_to_tables_dict, STYLES
 
 logger = log.setup_applevel_logger()
 
@@ -19,6 +19,7 @@ class Main:
         self.pars = Parser(URL)
         # хранит расписание
         self.tables: list = []
+        self.tables_dict: dict = {}
         # хранит названия групп
         self.group_names: list = []
         # хранит дату
@@ -35,6 +36,7 @@ class Main:
 
     def update(self):
         self.tables = self.pars.get_tables()
+        self.tables_dict = tables_to_tables_dict(self.tables)
         self.group_names = tables_to_group_names(self.tables)
         self.tables_date = self.pars.get_date()
 
@@ -98,15 +100,10 @@ class Main:
                 return group
         return ""
 
-    def _find_group_table(self, group_name: str) -> table_type:
-        for table in self.tables:
-            if table[0][1] == group_name:
-                return table
-
     def _service_send_table(self, user_id, service_name: str, group_name: str, style_id: int):
         self.service_send(service_name=service_name, user_id=user_id,
                           message=table_to_str(
-                              table=self._find_group_table(group_name),
+                              table=self.tables_dict.get(group_name),
                               style_id=style_id,
                               date=self.pars.get_date(),
                               consider_column_width=False))
@@ -201,7 +198,8 @@ class Main:
             try:
                 for event in self.events:
                     if event.service_name not in self.services:
-                        logger.warning(f'Сервис {event.service} имеется в базе но не зарегистрирован в приложении.')
+                        logger.warning(
+                            f'Сервис {event.service_name} имеется в базе но не зарегистрирован в приложении.')
                     else:
                         event_type = type(event)
 
