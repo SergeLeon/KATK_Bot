@@ -206,7 +206,7 @@ class Parser:
                 line.append(" ".join(additions))
 
         # если в клетке названия группы есть что-то, кроме группы оно переносится в другую колонку.
-        if table[0][1].count(" ") >= 1:
+        if table[0][1].count(" ") >= 1 and all(item for item in table[0][1].split() if _is_group_name(item)):
             first_line = table[0][1].split()
             table[0][1] = first_line[0]
 
@@ -214,12 +214,32 @@ class Parser:
 
         return table
 
+    @staticmethod
+    def _separate_group_table(table: table_type) -> list[table_type]:
+        group_tables = []
+
+        group_cell = table[0][1]
+        group_names = [item for item in group_cell.split() if _is_group_name(item)]
+
+        if len(group_names) > 1:
+            for group_name in group_names:
+                group_table = [[cell for cell in line] for line in table]
+                group_table[0][1] = group_name
+                group_tables.append(group_table)
+
+        return group_tables
+
     def _tables_to_group_tables(self, tables: list[table_type]) -> list[table_type]:
         group_tables = []
 
         for table in tables:
             table = self._delete_uninformative_table_lines(table)
             if table:
+                if table[0][1].count(" ") > 0:
+                    separated_tables = self._separate_group_table(table)
+                    if separated_tables:
+                        tables += separated_tables
+                        continue
                 table = self._reformat_table(table)
 
                 group_tables.append(table)
@@ -258,7 +278,7 @@ if __name__ == '__main__':
     from config import URL
     from table_formatter import table_to_str, tables_to_group_names
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     pars = Parser(URL)
     tabls = pars.get_tables()
@@ -271,4 +291,4 @@ if __name__ == '__main__':
     names = tables_to_group_names(tabls)
     print(len(names), names)
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+    print("--- %s seconds ---" % (time.perf_counter() - start_time))
