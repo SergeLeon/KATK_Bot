@@ -96,11 +96,12 @@ def _reformat_time_str(time_str: str) -> str:
     """
     '8:30-9:15 9:20-10:05' >>> '08:30-10:05'
     """
-    time_str = time_str.replace(" ", "").replace("–", " ").replace("-", " ")
-    if "  " in time_str:
-        time_str = " ".join(time_str.split())
-    splited = time_str.split(" ")
-    time_str = "-".join(spl.zfill(5) for spl in (splited[0], splited[-1]))
+    if len(time_str) > 8:
+        time_str = time_str.replace(" ", "").replace("–", " ").replace("-", " ")
+        if "  " in time_str:
+            time_str = " ".join(time_str.split())
+        splited = time_str.split(" ")
+        time_str = "-".join(spl.zfill(5) for spl in (splited[0], splited[-1]))
     return time_str
 
 
