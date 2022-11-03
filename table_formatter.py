@@ -1,4 +1,4 @@
-from data_parser import table_type
+from config import table_type
 
 
 def _style_0(table: table_type, column_width: list[int]) -> str:

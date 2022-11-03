@@ -8,10 +8,12 @@ from fake_useragent import UserAgent
 from requests.exceptions import ReadTimeout, ConnectionError
 from time import sleep
 
+from config import table_type
+from table_formatter import tables_to_group_names
+from xlsx_parser import get_regular_timetables
+
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
 NUMBERS = "0123456789"
-
-table_type = list[list[str]]
 
 
 def _is_group_name(string: str) -> bool:
@@ -50,14 +52,26 @@ def _get_link(a: Tag, domain: str) -> str:
 
 
 class Parser:
-    def __init__(self, url: str):
+    def __init__(self, url: str, regular_timetable_path: str):
         self.ua = UserAgent()
         self.url = url
         self.domain = urlparse(self.url).netloc
         self.session = requests.Session()
         self.soup = bs()
+        self.weekday = ""
         self.date = ""
         self.update()
+
+        self.regular_timetable_path = regular_timetable_path
+        self.regular_timetable = get_regular_timetables(self.regular_timetable_path)
+        self._clear_regular_timetable()
+
+    def _clear_regular_timetable(self):
+        for weekday, tables in self.regular_timetable.items():
+            for num, table in enumerate(tables):
+                table = self._delete_uninformative_table_lines(table)
+                table = self._reformat_table(table)
+                self.regular_timetable[weekday][num] = table
 
     def update(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         try:
@@ -94,6 +108,7 @@ class Parser:
                     if day in word or _find_inclusion(word, NUMBERS):
                         date += word
 
+                self.weekday = day.upper()
                 self.date = date.title()
                 break
 
@@ -244,6 +259,11 @@ class Parser:
 
                 group_tables.append(table)
 
+        group_names = tables_to_group_names(group_tables)
+        for regular_table in self.regular_timetable[self.weekday]:
+            if regular_table[0][1] not in group_names:
+                group_tables.append(regular_table)
+
         return self._delete_duplicates(group_tables)
 
     @staticmethod
@@ -275,12 +295,12 @@ class Parser:
 
 if __name__ == '__main__':
     import time
-    from config import URL
-    from table_formatter import table_to_str, tables_to_group_names
+    from config import URL, REGULAR_TIMETABLE_PATH
+    from table_formatter import table_to_str
 
     start_time = time.perf_counter()
 
-    pars = Parser(URL)
+    pars = Parser(URL, REGULAR_TIMETABLE_PATH)
     tabls = pars.get_tables()
     for tabl in tabls:
         print(table_to_str(table=tabl,

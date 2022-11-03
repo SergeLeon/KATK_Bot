@@ -1,5 +1,6 @@
 *.log
 *.db
+*.xlsx
 *env
 __pycache__
 .idea

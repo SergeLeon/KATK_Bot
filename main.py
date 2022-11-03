@@ -4,7 +4,7 @@ from time import sleep
 from event import Event
 import logger as log
 import message_templates
-from config import URL, CHECK_TIME
+from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH
 from data_parser import Parser
 from database import DataBase
 from table_formatter import table_to_str, tables_to_group_names, tables_to_tables_dict, STYLES
@@ -16,7 +16,7 @@ class Main:
     def __init__(self):
         self.events = []
         self.services = {}
-        self.pars = Parser(URL)
+        self.pars = Parser(URL, REGULAR_TIMETABLE_PATH)
         # хранит расписание
         self.tables: list = []
         self.tables_dict: dict = {}
