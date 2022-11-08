@@ -60,6 +60,7 @@ class Parser:
         self.soup = bs()
         self.weekday = ""
         self.date = ""
+        self.dates = []
         self.update()
 
         self.regular_timetable_path = regular_timetable_path
@@ -78,7 +79,8 @@ class Parser:
             self.session.headers.update({'User-Agent': self.ua.random})
             response = self.session.get(self.url, timeout=5).content
             self.soup = bs(response, "html.parser")
-            self._update_date()
+            self._update_dates()
+            self.weekday, self.date = self._get_last_date()
 
         except (ReadTimeout, ConnectionError):
             count += 1
@@ -93,8 +95,9 @@ class Parser:
             sleep(recon_time // 10)
             self.update(recon_max=recon_max, recon_time=recon_time, count=count)
 
-    def _update_date(self):
+    def _update_dates(self):
         strings = self._pars_spans_text()
+        dates = []
         for string in strings:
             string = string.lower()
 
@@ -108,9 +111,18 @@ class Parser:
                     if day in word or _find_inclusion(word, NUMBERS):
                         date += word
 
-                self.weekday = day.upper()
-                self.date = date.title()
-                break
+                weekday = day.upper()
+                date = date.title()
+
+                dates.append([weekday, date])
+
+        self.dates = dates
+
+    def _get_last_date(self):
+        # TODO: Если сменится месяц то вернётся неверное значение
+        dates = sorted(self.dates, key=lambda date: date[1])
+        weekday, date = dates[-1]
+        return weekday, date
 
     def get_date(self) -> str:
         return self.date
@@ -133,11 +145,12 @@ class Parser:
 
         return text
 
-    def _pars_today_tables(self) -> table_type:
-        tables = self.soup.find_all("table")
+    def _pars_today_tables(self) -> list[table_type]:
+        parse_tables = self.soup.find_all("table")
 
-        text_lines = []
-        for table in tables:
+        tables = []
+        for table in parse_tables:
+            text_lines = []
             lines = table.find_all("tr")
 
             for line in lines:
@@ -147,8 +160,14 @@ class Parser:
 
                 if any(texts):
                     text_lines.append(texts)
+            tables.append(text_lines)
+        return tables
 
-        return text_lines
+    def _select_last_table(self, tables: list[table_type]):
+        for num, date in enumerate(self.dates):
+            if date[1] == self.date:
+                return tables[num]
+        return tables[0]
 
     @staticmethod
     def _split_table_by_lines(text_table: table_type) -> list[table_type]:
@@ -259,12 +278,15 @@ class Parser:
 
                 group_tables.append(table)
 
+        group_tables = self._delete_duplicates(group_tables)
+
         group_names = tables_to_group_names(group_tables)
-        for regular_table in self.regular_timetable[self.weekday]:
+
+        for regular_table in self.regular_timetable.get(self.weekday, ""):
             if regular_table[0][1] not in group_names:
                 group_tables.append(regular_table)
 
-        return self._delete_duplicates(group_tables)
+        return group_tables
 
     @staticmethod
     def _delete_duplicates(tables: list[table_type]) -> list[table_type]:
@@ -285,7 +307,8 @@ class Parser:
     def get_tables(self) -> list[table_type]:
         return self._tables_to_group_tables(
                self._split_table(
-               self._pars_today_tables()))
+               self._select_last_table(
+               tables=self._pars_today_tables())))
 
     def _pars_spans_text(self) -> list:
         spans = self.soup.find_all("b")
