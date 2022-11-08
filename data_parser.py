@@ -179,7 +179,7 @@ class Parser:
             if is_group_names_line:
                 new_tables.append(text_table[last_line: line_num])
                 last_line = line_num
-        new_tables.append(text_table[last_line: -1])
+        new_tables.append(text_table[last_line:])
 
         return new_tables[1:]
 
