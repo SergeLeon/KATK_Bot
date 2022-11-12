@@ -64,7 +64,8 @@ class Parser:
         self.update()
 
         self.regular_timetable_path = regular_timetable_path
-        self.regular_timetable = get_regular_timetables(self.regular_timetable_path)
+        self.regular_timetable = get_regular_timetables(self.regular_timetable_path) \
+            if self.regular_timetable_path else {}
         self._clear_regular_timetable()
 
     def _clear_regular_timetable(self):
@@ -113,8 +114,8 @@ class Parser:
 
                 weekday = day.upper()
                 date = date.title()
-
-                dates.append([weekday, date])
+                if _find_inclusion(date, NUMBERS):
+                    dates.append([weekday, date])
 
         self.dates = dates
 
