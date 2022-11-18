@@ -36,7 +36,7 @@ class TelegramBot:
         except ApiTelegramException as exc:
             error_code = exc.error_code
             if error_code == 403:
-                # код 403 - бот заблокирован пользователем
+                # код 403 - бот заблокирован пользователем или удален из беседы
                 self.events.append(Event.DELETE_GROUP(
                     service_name=self.service_name,
                     user_id=user_id))
@@ -69,7 +69,7 @@ class TelegramBot:
             logger.info(f"Соединение восстановлено спустя {count} попыт(ку/ки/ок)")
 
     def register_handlers(self):
-        self.bot.register_message_handler(self.handle_message)
+        self.bot.register_message_handler(self.handle_message, content_types=["text"])
         self.bot.register_chat_join_request_handler(self.handle_chat_join)
 
     def handle_chat_join(self, message):
