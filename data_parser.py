@@ -240,6 +240,8 @@ class Parser:
 
                 line.append(" ".join(additions))
 
+        table[0][1] = table[0][1].replace("_", "-")
+
         # если в клетке названия группы есть что-то, кроме группы оно переносится в другую колонку.
         if table[0][1].count(" ") >= 1 and all(item for item in table[0][1].split() if _is_group_name(item)):
             first_line = table[0][1].split()
