@@ -22,6 +22,37 @@ def _is_group_name(string: str) -> bool:
     return False
 
 
+def _normalize_group_name(group_name):
+    # 20ТО1 20ТО-1 20-ТО1 >>> 20-ТО-1
+    # TODO: Сделать менее громоздкое решение
+    group_name_parts = []
+    last_is_numeric = False
+    for char in group_name:
+
+        if not group_name_parts:
+            group_name_parts.append(char)
+            last_is_numeric = char.isnumeric()
+            continue
+
+        if char.isnumeric():
+            if last_is_numeric:
+                group_name_parts[-1] += char
+            else:
+                group_name_parts.append(char)
+            last_is_numeric = True
+
+        elif char.isalpha():
+            if not last_is_numeric:
+                group_name_parts[-1] += char
+            else:
+                group_name_parts.append(char)
+            last_is_numeric = False
+        else:
+            continue
+
+    return "-".join(group_name_parts)
+
+
 def _find_inclusion(string: str, inclusions: Iterable[str]) -> str:
     """
     Возвращает первое найденное в строке включение или пустую строку, если включений не найдено.
@@ -242,12 +273,8 @@ class Parser:
 
         table[0][1] = table[0][1].replace("_", "-")
 
-        # если в клетке названия группы есть что-то, кроме группы оно переносится в другую колонку.
-        if table[0][1].count(" ") >= 1 and all(item for item in table[0][1].split() if _is_group_name(item)):
-            first_line = table[0][1].split()
-            table[0][1] = first_line[0]
-
-            table[0][2] += f' {first_line[1]}' if table[0][2] else first_line[1]
+        if table[0][1].count("-") <= 1:
+            table[0][1] = _normalize_group_name(table[0][1])
 
         return table
 
@@ -255,14 +282,22 @@ class Parser:
     def _separate_group_table(table: table_type) -> list[table_type]:
         group_tables = []
 
-        group_cell = table[0][1]
-        group_names = [item for item in group_cell.split() if _is_group_name(item)]
+        first_line = table[0][1].split()
 
-        if len(group_names) > 1:
+        group_names = []
+        rest = []
+
+        for item in first_line:
+            group_names.append(item) if _is_group_name(item) else rest.append(item)
+
+        if len(first_line) > 1:
             for group_name in group_names:
                 group_table = [[cell for cell in line] for line in table]
                 group_table[0][1] = group_name
+                group_table[0].append(" ".join(rest))
                 group_tables.append(group_table)
+        else:
+            return [table, ]
 
         return group_tables
 
@@ -271,15 +306,21 @@ class Parser:
 
         for table in tables:
             table = self._delete_uninformative_table_lines(table)
-            if table:
-                if table[0][1].count(" ") > 0:
-                    separated_tables = self._separate_group_table(table)
-                    if separated_tables:
-                        tables += separated_tables
-                        continue
-                table = self._reformat_table(table)
 
-                group_tables.append(table)
+            if not table:
+                continue
+
+            if " " in table[0][1]:
+                separated_tables = self._separate_group_table(table)
+
+                if len(separated_tables) == 1:
+                    table = separated_tables[0]
+                elif len(separated_tables) > 1:
+                    tables += separated_tables
+                    continue
+
+            table = self._reformat_table(table)
+            group_tables.append(table)
 
         group_tables = self._delete_duplicates(group_tables)
 
