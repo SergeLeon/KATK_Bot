@@ -22,33 +22,22 @@ def _is_group_name(string: str) -> bool:
     return False
 
 
-def _normalize_group_name(group_name):
+def _normalize_group_name(group_name: str) -> str:
     # 20ТО1 20ТО-1 20-ТО1 >>> 20-ТО-1
-    # TODO: Сделать менее громоздкое решение
-    group_name_parts = []
-    last_is_numeric = False
-    for char in group_name:
+    if group_name:
+        first_char = group_name[0]
+        group_name_parts = [first_char, ]
+        last_is_numeric = first_char.isnumeric()
+    else:
+        return ""
 
-        if not group_name_parts:
-            group_name_parts.append(char)
+    for char in group_name[1:]:
+        if char.isalnum():
+            if (last_is_numeric and char.isnumeric()) or (not last_is_numeric and char.isalpha()):
+                group_name_parts[-1] += char
+            else:
+                group_name_parts.append(char)
             last_is_numeric = char.isnumeric()
-            continue
-
-        if char.isnumeric():
-            if last_is_numeric:
-                group_name_parts[-1] += char
-            else:
-                group_name_parts.append(char)
-            last_is_numeric = True
-
-        elif char.isalpha():
-            if not last_is_numeric:
-                group_name_parts[-1] += char
-            else:
-                group_name_parts.append(char)
-            last_is_numeric = False
-        else:
-            continue
 
     return "-".join(group_name_parts)
 
@@ -146,7 +135,7 @@ class Parser:
                 weekday = day.upper()
                 date = date.title()
                 if _find_inclusion(date, NUMBERS):
-                    dates.append([weekday, date])
+                    dates.append((weekday, date))
 
         self.dates = dates
 
