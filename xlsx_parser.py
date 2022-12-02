@@ -72,7 +72,7 @@ def _extract_timetables_by_weekdays(table):
         group_name = row[0].replace(" ", "-").replace("--", "-")
         for weekday, slice_start, slice_stop in weekdays_slices:
             timetables_by_weekdays[weekday][group_name] = (
-                timestamps[slice_start:slice_stop], row[slice_start:slice_stop])
+                timestamps[slice_start:slice_stop+1], row[slice_start:slice_stop+1])
 
     return timetables_by_weekdays
 
