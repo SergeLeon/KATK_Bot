@@ -7,7 +7,7 @@ def _worksheet_as_list(worksheet, replace_none=True) -> list[list[str]]:
     table = []
     for row in worksheet.rows:
         if replace_none:
-            table.append([cell.value.strip().replace("\n", " ").upper() if cell.value else "" for cell in row])
+            table.append([cell.value.strip().replace("\n", "").upper() if cell.value else "" for cell in row])
         else:
             table.append([cell.value for cell in row])
     return table
