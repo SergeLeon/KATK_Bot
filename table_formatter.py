@@ -18,7 +18,7 @@ def _style_0(table: table_type, column_width: list[int]) -> str:
                 else:
                     table_str += cell.ljust(column_width[cell_num], " ")
 
-                if not cell == line[-1]:
+                if cell != line[-1]:
                     table_str += " | "
 
         table_str += "\n"
@@ -46,7 +46,7 @@ def _style_1(table: table_type, column_width: list[int]) -> str:
                 else:
                     table_str += cell.ljust(column_width[cell_num], " ")
 
-                if not cell == line[-1]:
+                if cell != line[-1]:
                     table_str += " | "
 
         table_str += "\n"
@@ -73,7 +73,7 @@ def _style_2(table: table_type, column_width: list[int]) -> str:
                 else:
                     table_str += cell.ljust(column_width[cell_num], " ")
 
-                if not cell == line[-1]:
+                if cell != line[-1]:
                     table_str += " | "
 
         table_str += "\n"

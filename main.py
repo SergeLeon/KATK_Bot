@@ -59,7 +59,7 @@ class Main:
                     if self.pars.get_date() != self.tables_date:
                         self.update()
                         logger.info("Все таблицы обновлены")
-                        logger.debug(f"Дата: {self.tables_date}")
+                        logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(self.tables)}")
                         for group_info in self.db.get_adverted():
                             self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
                                                                 user_id=group_info["user_id"],
