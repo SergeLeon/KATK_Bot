@@ -127,19 +127,21 @@ class Parser:
             string = string.lower()
 
             day = _find_inclusion(string, WEEKDAYS)
-            if day:
-                texts_words = string.split()
-                date = ""
+            if not day:
+                continue
 
-                # Отделение строк с информацией
-                for word in texts_words:
-                    if day in word or _find_inclusion(word, NUMBERS):
-                        date += word
+            texts_words = string.split()
+            date = ""
 
-                weekday = day.upper()
-                date = date.title()
-                if _find_inclusion(date, NUMBERS):
-                    dates.append((weekday, date))
+            # Отделение строк с информацией
+            for word in texts_words:
+                if day in word or _find_inclusion(word, NUMBERS):
+                    date += word
+
+            weekday = day.upper()
+            date = date.title()
+            if _find_inclusion(date, NUMBERS):
+                dates.append((weekday, date))
 
         self.dates = dates
 
@@ -227,10 +229,10 @@ class Parser:
         table = [[cell for cell in line] for line in table]
 
         for line in table[::-1]:
-            if not line[1]:
-                table.remove(line)
-            else:
+            if line[1]:
                 break
+            table.remove(line)
+
         return table
 
     @staticmethod
@@ -239,30 +241,32 @@ class Parser:
 
         for line in table:
 
-            if len(line) == 2:
-                titles = []
-                additions = []
-                if "http" in line[1]:
-                    splited = line[1].split()
+            if len(line) != 2:
+                continue
 
-                    for word in splited:
-                        if "http" in word:
-                            additions.append(word)
-                        else:
-                            titles.append(word)
+            titles = []
+            additions = []
+            if "http" in line[1]:
+                splited = line[1].split()
 
-                    line[1] = " ".join(titles)
+                for word in splited:
+                    if "http" in word:
+                        additions.append(word)
+                    else:
+                        titles.append(word)
 
-                if "КАБ" in line[1]:
-                    splited = line[1].rsplit('КАБ', 1)
+                line[1] = " ".join(titles)
 
-                    title = splited[0].rstrip("( ")
-                    cabinet_number = splited[1].strip("). ")
+            if "КАБ" in line[1]:
+                splited = line[1].rsplit('КАБ', 1)
 
-                    line[1] = title
-                    additions.insert(0, cabinet_number)
+                title = splited[0].rstrip("( ")
+                cabinet_number = splited[1].strip("). ")
 
-                line.append(" ".join(additions))
+                line[1] = title
+                additions.insert(0, cabinet_number)
+
+            line.append(" ".join(additions))
 
         table[0][1] = table[0][1].replace("_", "-")
 
@@ -273,24 +277,26 @@ class Parser:
 
     @staticmethod
     def _separate_group_table(table: table_type) -> list[table_type]:
-        group_tables = []
-
         first_line = table[0][1].split()
+        if len(first_line) <= 1:
+            return [table, ]
 
         group_names = []
         rest = []
 
         for item in first_line:
-            group_names.append(item) if _is_group_name(item) else rest.append(item)
+            if _is_group_name(item):
+                group_names.append(item)
+            else:
+                rest.append(item)
 
-        if len(first_line) > 1:
-            for group_name in group_names:
-                group_table = [[cell for cell in line] for line in table]
-                group_table[0][1] = group_name
-                group_table[0].append(" ".join(rest))
-                group_tables.append(group_table)
-        else:
-            return [table, ]
+        group_tables = []
+
+        for group_name in group_names:
+            group_table = [[cell for cell in line] for line in table]
+            group_table[0][1] = group_name
+            group_table[0].append(" ".join(rest))
+            group_tables.append(group_table)
 
         return group_tables
 
