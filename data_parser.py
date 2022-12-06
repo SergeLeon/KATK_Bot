@@ -97,9 +97,13 @@ class Parser:
 
     def update(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         try:
-            self.session.headers.update({'User-Agent': self.ua.random})
-            response = self.session.get(self.url, timeout=5).content
-            self.soup = bs(response, "html.parser")
+            headers = {'User-Agent': self.ua.random.strip()}
+            self.session.headers.update(headers)
+
+            response = self.session.get(self.url, timeout=5)
+            content = response.content
+
+            self.soup = bs(content, "html.parser")
             self._update_dates()
             self.weekday, self.date = self._get_last_date()
 
