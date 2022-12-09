@@ -268,10 +268,13 @@ class Parser:
 
             line.append(" ".join(additions))
 
-        table[0][1] = table[0][1].replace("_", "-")
+        group_name = table[0][1]
+        group_name = group_name.replace("_", "-")
 
-        if table[0][1].count("-") <= 1:
-            table[0][1] = _normalize_group_name(table[0][1])
+        if group_name.count("-") != 2:
+            group_name = _normalize_group_name(table[0][1])
+
+        table[0][1] = group_name
 
         return table
 
