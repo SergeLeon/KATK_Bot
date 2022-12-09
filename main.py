@@ -40,52 +40,55 @@ class Main:
         self.group_names = tables_to_group_names(self.tables)
         self.tables_date = self.pars.get_date()
 
+    def __parsing_cycle(self) -> None:
+        self.pars.update()
+
+        new_tables = self.pars.get_tables()
+        # Проверка на существование информации
+        if not tables_to_group_names(new_tables):
+            logger.warning("Парсер ничего не вернул")
+            return
+
+        old_tables = self.tables
+
+        new_tables.sort(key=lambda table: table[0][1])
+        old_tables.sort(key=lambda table: table[0][1])
+
+        if self.pars.get_date() != self.tables_date:
+            self.update()
+            logger.info("Все таблицы обновлены")
+            logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(self.tables)}")
+            for group_info in self.db.get_adverted():
+                self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
+                                                    user_id=group_info["user_id"],
+                                                    group_name=group_info["name"]))
+
+        elif new_tables != old_tables:
+
+            logger.info("Таблицы обновлены")
+
+            updated_groups = []
+            for new_table, old_table in zip(new_tables, old_tables):
+                if new_table != old_table:
+                    updated_groups.append(new_table[0][1])
+
+            logger.debug(f"для {updated_groups}")
+
+            self.update()
+
+            for group_info in self.db.get_adverted():
+                if group_info["name"] in updated_groups:
+                    self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
+                                                        user_id=group_info["user_id"],
+                                                        group_name=group_info["name"]))
+
     def parsing_loop(self):
         self.update()
 
         logger.info("parsing_loop запущен")
         while True:
             try:
-                self.pars.update()
-
-                new_tables = self.pars.get_tables()
-                # Проверка на существование информации
-                if tables_to_group_names(new_tables):
-                    old_tables = self.tables
-
-                    new_tables.sort(key=lambda table: table[0][1])
-                    old_tables.sort(key=lambda table: table[0][1])
-
-                    if self.pars.get_date() != self.tables_date:
-                        self.update()
-                        logger.info("Все таблицы обновлены")
-                        logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(self.tables)}")
-                        for group_info in self.db.get_adverted():
-                            self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
-                                                                user_id=group_info["user_id"],
-                                                                group_name=group_info["name"]))
-
-                    elif new_tables != old_tables:
-
-                        logger.info("Таблицы обновлены")
-
-                        updated_groups = []
-                        for new_table, old_table in zip(new_tables, old_tables):
-                            if new_table != old_table:
-                                updated_groups.append(new_table[0][1])
-
-                        logger.debug(f"для {updated_groups}")
-
-                        self.update()
-
-                        for group_info in self.db.get_adverted():
-                            if group_info["name"] in updated_groups:
-                                self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
-                                                                    user_id=group_info["user_id"],
-                                                                    group_name=group_info["name"]))
-                else:
-                    logger.warning("Парсер ничего не вернул")
-
+                self.__parsing_cycle()
             except:
                 logger.exception('')
 
@@ -110,62 +113,66 @@ class Main:
 
     def __set_group(self, user_id, service_name: str, group_name):
         norm_group = self._find_group_name(group_name)
-        if bool(norm_group):
-
-            if self.db.get_user(user_id, service_name):
-                self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="name", value=norm_group)
-            else:
-                self.db.add_group(user_id=user_id, group_name=norm_group, service_name=service_name)
-
-            self.service_send(service_name=service_name, user_id=user_id,
-                              message=message_templates.GROUP_CHANGED_TO.format(group=norm_group))
-
-        else:
+        if not norm_group:
             self.service_send(service_name=service_name, user_id=user_id,
                               message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
+            return
+
+        if self.db.get_user(user_id, service_name):
+            self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="name", value=norm_group)
+        else:
+            self.db.add_group(user_id=user_id, group_name=norm_group, service_name=service_name)
+
+        self.service_send(service_name=service_name, user_id=user_id,
+                          message=message_templates.GROUP_CHANGED_TO.format(group=norm_group))
 
     def __set_style(self, user_id, service_name: str, style_id):
-        if style_id.isnumeric() and (int(style_id) in STYLES):
-            style_id = int(style_id)
+        style_id_is_valid = style_id.isnumeric() and (int(style_id) in STYLES)
 
-            if self.db.get_user(user_id, service_name):
-                self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="style_id", value=style_id)
-                self.service_send(service_name=service_name, user_id=user_id,
-                                  message=message_templates.STYLE_CHANGED_TO.format(style=style_id))
-            else:
-                self.service_send(service_name=service_name, user_id=user_id,
-                                  message=message_templates.NEED_SELECT_GROUP)
-        else:
+        if not style_id_is_valid:
             self.service_send(service_name=service_name, user_id=user_id,
                               message=message_templates.STYLE_NOT_FOUND.format(style=style_id))
+            return
+
+        style_id = int(style_id)
+
+        if self.db.get_user(user_id, service_name):
+            self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="style_id", value=style_id)
+            self.service_send(service_name=service_name, user_id=user_id,
+                              message=message_templates.STYLE_CHANGED_TO.format(style=style_id))
+        else:
+            self.service_send(service_name=service_name, user_id=user_id,
+                              message=message_templates.NEED_SELECT_GROUP)
 
     def __set_adv(self, user_id, service_name: str):
         group_info = self.db.get_user(user_id, service_name)
-        if group_info:
-            group_adv = not group_info["adv"]
-            self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="adv", value=group_adv)
-
-            if group_adv:
-                self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_ON)
-            else:
-                self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_OFF)
-        else:
+        if not group_info:
             self.service_send(service_name=service_name, user_id=user_id, message=message_templates.NEED_SELECT_GROUP)
+            return
+
+        group_adv = not group_info["adv"]
+        self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="adv", value=group_adv)
+
+        if group_adv:
+            self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_ON)
+        else:
+            self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_OFF)
 
     def _send_table_by_db(self, user_id, service_name: str):
         group_info = self.db.get_user(user_id, service_name)
-        if group_info:
-            if group_info["name"] in self.group_names:
-                self._service_send_table(user_id=group_info["user_id"],
-                                         service_name=service_name,
-                                         group_name=group_info["name"],
-                                         style_id=group_info["style_id"])
-            else:
-                self.service_send(service_name=service_name, user_id=user_id,
-                                  message=f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n"
-                                          f"{message_templates.NEED_SELECT_GROUP}")
-        else:
+        if not group_info:
             self.service_send(service_name=service_name, user_id=user_id, message=message_templates.NEED_SELECT_GROUP)
+            return
+
+        if group_info["name"] in self.group_names:
+            self._service_send_table(user_id=group_info["user_id"],
+                                     service_name=service_name,
+                                     group_name=group_info["name"],
+                                     style_id=group_info["style_id"])
+        else:
+            self.service_send(service_name=service_name, user_id=user_id,
+                              message=f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n" +
+                                      f"{message_templates.NEED_SELECT_GROUP}")
 
     def _send_table_by_group_name(self, user_id, service_name: str, group_name: str = None):
         norm_group = self._find_group_name(group_name)
@@ -181,57 +188,62 @@ class Main:
                               message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
 
     def __send_table(self, user_id, service_name: str, group_name: str = None):
-        if self.tables and self.group_names:
-            if group_name is None:
-                self._send_table_by_db(user_id=user_id, service_name=service_name)
-            else:
-                self._send_table_by_group_name(user_id=user_id, service_name=service_name, group_name=group_name)
-        else:
+        if not (self.tables and self.group_names):
             self.service_send(service_name=service_name, user_id=user_id, message=message_templates.NO_INFORMATION)
+            return
+
+        if group_name is None:
+            self._send_table_by_db(user_id=user_id, service_name=service_name)
+        else:
+            self._send_table_by_group_name(user_id=user_id, service_name=service_name, group_name=group_name)
 
     def __delete_group(self, user_id, service_name: str):
         self.db.delete_user(user_id=user_id, service_name=service_name)
+
+    def __handle_event(self, event) -> None:
+        if event.service_name not in self.services:
+            logger.warning(
+                f'Сервис {event.service_name} имеется в базе но не зарегистрирован в приложении.')
+            return
+
+        event_type = type(event)
+
+        if event_type == Event.SET_GROUP:
+            self.__set_group(
+                user_id=event.user_id,
+                service_name=event.service_name,
+                group_name=event.group_name)
+
+        elif event_type == Event.SET_STYLE:
+            self.__set_style(
+                user_id=event.user_id,
+                service_name=event.service_name,
+                style_id=event.style_id)
+
+        elif event_type == Event.SET_ADV:
+            self.__set_adv(
+                user_id=event.user_id,
+                service_name=event.service_name)
+
+        elif event_type == Event.SEND_TABLE:
+            self.__send_table(
+                user_id=event.user_id,
+                group_name=event.group_name,
+                service_name=event.service_name)
+
+        elif event_type == Event.DELETE_GROUP:
+            self.__delete_group(
+                user_id=event.user_id,
+                service_name=event.service_name)
+        else:
+            logger.warning(f"Неотлавливаемый event: {event}")
 
     def event_loop(self):
         logger.info("event_loop запущен")
         while True:
             try:
                 for event in self.events:
-                    if event.service_name not in self.services:
-                        logger.warning(
-                            f'Сервис {event.service_name} имеется в базе но не зарегистрирован в приложении.')
-                    else:
-                        event_type = type(event)
-
-                        if event_type == Event.SET_GROUP:
-                            self.__set_group(
-                                user_id=event.user_id,
-                                service_name=event.service_name,
-                                group_name=event.group_name)
-
-                        elif event_type == Event.SET_STYLE:
-                            self.__set_style(
-                                user_id=event.user_id,
-                                service_name=event.service_name,
-                                style_id=event.style_id)
-
-                        elif event_type == Event.SET_ADV:
-                            self.__set_adv(
-                                user_id=event.user_id,
-                                service_name=event.service_name)
-
-                        elif event_type == Event.SEND_TABLE:
-                            self.__send_table(
-                                user_id=event.user_id,
-                                group_name=event.group_name,
-                                service_name=event.service_name)
-
-                        elif event_type == Event.DELETE_GROUP:
-                            self.__delete_group(
-                                user_id=event.user_id,
-                                service_name=event.service_name)
-                        else:
-                            logger.warning(f"Неотлавливаемый event: {event}")
+                    self.__handle_event(event)
 
                     self.events.remove(event)
             except:
