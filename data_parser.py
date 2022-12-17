@@ -309,7 +309,7 @@ class Parser:
         for table in tables:
             table = self._delete_uninformative_table_lines(table)
 
-            if not table:
+            if not table or not table[0][1]:
                 continue
 
             if " " in table[0][1]:
