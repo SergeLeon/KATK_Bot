@@ -33,6 +33,7 @@ class Main:
 
     def register_service(self, service, service_name: str, token, **kwargs):
         self.services[service_name] = service(service_name=service_name, token=token, events=self.events, **kwargs)
+        logger.debug(f"Зарегистрирован сервис {service_name}:{service}")
 
     def update(self):
         self.tables = self.pars.get_tables()
@@ -255,6 +256,8 @@ class Main:
     def run(self):
         logger.info("Запуск циклов")
 
+        assert self.services, "Отсутствуют сервисы для запуска"
+
         for _, service in self.services.items():
             service_loop = Thread(target=service.main_loop, daemon=True)
             service_loop.start()
@@ -267,13 +270,15 @@ class Main:
 
 
 def register_all_services(application: Main):
-    from vk_bot import VKBot
     from config import VK_TOKEN
-    application.register_service(service=VKBot, service_name="vk", token=VK_TOKEN)
+    if VK_TOKEN:
+        from vk_bot import VKBot
+        application.register_service(service=VKBot, service_name="vk", token=VK_TOKEN)
 
-    from tg_bot import TelegramBot
     from config import TELEGRAM_TOKEN
-    application.register_service(service=TelegramBot, service_name="telegram", token=TELEGRAM_TOKEN)
+    if TELEGRAM_TOKEN:
+        from tg_bot import TelegramBot
+        application.register_service(service=TelegramBot, service_name="telegram", token=TELEGRAM_TOKEN)
 
 
 if __name__ == '__main__':
