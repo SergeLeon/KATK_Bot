@@ -147,6 +147,32 @@ def tables_to_tables_dict(tables: list[table_type]) -> dict:
     return {table[0][1]: table for table in tables}
 
 
+def is_group_name(string: str) -> bool:
+    if string:
+        return "-" in string and string[0].isnumeric()
+    return False
+
+
+def normalize_group_name(group_name: str) -> str:
+    # 20ТО1 20ТО-1 20-ТО1 >>> 20-ТО-1
+    if group_name:
+        first_char = group_name[0]
+        group_name_parts = [first_char, ]
+        last_is_numeric = first_char.isnumeric()
+    else:
+        return ""
+
+    for char in group_name[1:]:
+        if char.isalnum():
+            if (last_is_numeric and char.isnumeric()) or (not last_is_numeric and char.isalpha()):
+                group_name_parts[-1] += char
+            else:
+                group_name_parts.append(char)
+            last_is_numeric = char.isnumeric()
+
+    return "-".join(group_name_parts)
+
+
 if __name__ == '__main__':
     tabl = [["ЧАС", "123", "КАБ"],
             ["1:02-02:04 2:05-03:04", "ПАРА1", "11"],

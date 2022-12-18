@@ -9,37 +9,11 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from time import sleep
 
 from config import table_type
-from table_formatter import tables_to_group_names
+from table_formatter import tables_to_group_names, is_group_name, normalize_group_name
 from xlsx_parser import get_regular_timetables
 
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
 NUMBERS = "0123456789"
-
-
-def _is_group_name(string: str) -> bool:
-    if string:
-        return "-" in string and string[0].isnumeric()
-    return False
-
-
-def _normalize_group_name(group_name: str) -> str:
-    # 20ТО1 20ТО-1 20-ТО1 >>> 20-ТО-1
-    if group_name:
-        first_char = group_name[0]
-        group_name_parts = [first_char, ]
-        last_is_numeric = first_char.isnumeric()
-    else:
-        return ""
-
-    for char in group_name[1:]:
-        if char.isalnum():
-            if (last_is_numeric and char.isnumeric()) or (not last_is_numeric and char.isalpha()):
-                group_name_parts[-1] += char
-            else:
-                group_name_parts.append(char)
-            last_is_numeric = char.isnumeric()
-
-    return "-".join(group_name_parts)
 
 
 def _find_inclusion(string: str, inclusions: Iterable[str]) -> str:
@@ -201,7 +175,7 @@ class Parser:
         last_line = 0
         new_tables = []
         for line_num, line in enumerate(text_table):
-            group_name_in_line = any(_is_group_name(cell) for cell in line[1:])
+            group_name_in_line = any(is_group_name(cell) for cell in line[1:])
             is_group_names_line = "ГРУППА" in line[0] or (not line[0] and group_name_in_line)
             if is_group_names_line:
                 new_tables.append(text_table[last_line: line_num])
@@ -272,7 +246,7 @@ class Parser:
         group_name = group_name.replace("_", "-")
 
         if group_name.count("-") != 2:
-            group_name = _normalize_group_name(table[0][1])
+            group_name = normalize_group_name(table[0][1])
 
         table[0][1] = group_name
 
@@ -288,7 +262,7 @@ class Parser:
         rest = []
 
         for item in first_line:
-            if _is_group_name(item):
+            if is_group_name(item):
                 group_names.append(item)
             else:
                 rest.append(item)
