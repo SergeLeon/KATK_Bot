@@ -7,7 +7,7 @@ import message_templates
 from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH
 from data_parser import Parser
 from database import DataBase
-from table_formatter import table_to_str, tables_to_group_names, tables_to_tables_dict, STYLES
+from table_formatter import table_to_str, tables_to_group_names, tables_to_tables_dict, normalize_group_name, STYLES
 
 logger = log.setup_applevel_logger()
 
@@ -113,19 +113,20 @@ class Main:
                               consider_column_width=False))
 
     def __set_group(self, user_id, service_name: str, group_name):
-        norm_group = self._find_group_name(group_name)
-        if not norm_group:
+        normalized_group = normalize_group_name(group_name)
+        normalized_group = self._find_group_name(normalized_group)
+        if not normalized_group:
             self.service_send(service_name=service_name, user_id=user_id,
                               message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
             return
 
         if self.db.get_user(user_id, service_name):
-            self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="name", value=norm_group)
+            self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="name", value=normalized_group)
         else:
-            self.db.add_group(user_id=user_id, group_name=norm_group, service_name=service_name)
+            self.db.add_group(user_id=user_id, group_name=normalized_group, service_name=service_name)
 
         self.service_send(service_name=service_name, user_id=user_id,
-                          message=message_templates.GROUP_CHANGED_TO.format(group=norm_group))
+                          message=message_templates.GROUP_CHANGED_TO.format(group=normalized_group))
 
     def __set_style(self, user_id, service_name: str, style_id):
         style_id_is_valid = style_id.isnumeric() and (int(style_id) in STYLES)
@@ -154,10 +155,8 @@ class Main:
         group_adv = not group_info["adv"]
         self.db.set_by_user_id(user_id=user_id, service_name=service_name, field="adv", value=group_adv)
 
-        if group_adv:
-            self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_ON)
-        else:
-            self.service_send(service_name=service_name, user_id=user_id, message=message_templates.ADVERTS_OFF)
+        self.service_send(service_name=service_name, user_id=user_id,
+                          message=message_templates.ADVERTS_ON if group_adv else message_templates.ADVERTS_OFF)
 
     def _send_table_by_db(self, user_id, service_name: str):
         group_info = self.db.get_user(user_id, service_name)
