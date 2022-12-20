@@ -16,10 +16,9 @@ class TelegramBot:
         self.service_name = service_name
         self.events = events
         self.token = token
+        self.bot = TeleBot(self.token)
         try:
-            self.bot = TeleBot(self.token)
-            self.register_handlers()
-            self.bot.get_me()
+            self.connect()
 
         except (ReadTimeout, ConnectionError):
             self.reconnect()
@@ -43,14 +42,17 @@ class TelegramBot:
             else:
                 logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
 
+    def connect(self):
+        self.bot = TeleBot(self.token)
+        self.bot.get_me()  # Делает запрос для проверки соединения
+        self.register_handlers()
+
     def reconnect(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         if count == 1:
             logger.info(f"Соединение разорвано")
         try:
             self.bot.stop_bot()
-            self.bot = TeleBot(self.token)
-            self.register_handlers()
-            self.bot.get_me()
+            self.connect()
 
         except (ReadTimeout, ConnectionError):
             count += 1
