@@ -57,22 +57,22 @@ class Main:
 
         if self.pars.get_date() != self.tables_date:
             self.update()
+
             logger.info("Все таблицы обновлены")
-            logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(self.tables)}")
+            logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(new_tables)}")
+
             for group_info in self.db.get_adverted():
                 self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
                                                     user_id=group_info["user_id"],
                                                     group_name=group_info["name"]))
 
         elif new_tables != old_tables:
-
-            logger.info("Таблицы обновлены")
-
             updated_groups = []
             for new_table, old_table in zip(new_tables, old_tables):
                 if new_table != old_table:
                     updated_groups.append(new_table[0][1])
 
+            logger.info(f"Таблицы обновлены: {len(updated_groups)}; Кол-во групп: {len(new_tables)}")
             logger.debug(f"для {updated_groups}")
 
             self.update()
