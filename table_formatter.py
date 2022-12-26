@@ -131,6 +131,9 @@ def table_to_str(table: table_type,
     if "12.11" in date:
         date = f"🎂{date}🎂"
 
+    elif ".12." in date:
+        date = f"🎄{date}🎄"
+
     table_str = f"{date}\n{table_str}"
 
     if table_str.count("\n") <= 2:
