@@ -128,7 +128,7 @@ class Main:
                 date=date,
                 consider_column_width=False)
             message += "\n"
-        message = message.strip().replace("\n\n", "\n----------------------------\n")
+        message = message.strip()
         self.service_send(service_name=service_name, user_id=user_id, message=message)
 
     def __set_group(self, user_id, service_name: str, group_name):
