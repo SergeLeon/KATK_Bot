@@ -4,10 +4,10 @@ from time import sleep
 from event import Event
 import logger as log
 import message_templates
-from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH
+from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH, table_type, table_dict_type
 from data_parser import Parser
 from database import DataBase
-from table_formatter import table_to_str, tables_to_group_names, tables_to_tables_dict, normalize_group_name, STYLES
+from table_formatter import table_to_str, tables_dict_to_group_names, normalize_group_name, STYLES
 
 logger = log.setup_applevel_logger()
 
@@ -18,10 +18,9 @@ class Main:
         self.services = {}
         self.pars = Parser(URL, REGULAR_TIMETABLE_PATH)
         # хранит расписание
-        self.tables: list = []
-        self.tables_dict: dict = {}
+        self.tables_dict: table_dict_type = {}
         # хранит названия групп
-        self.group_names: list = []
+        self.group_names: list[str] = []
         # хранит дату
         self.tables_date: str = ""
         self.update()
@@ -36,52 +35,68 @@ class Main:
         logger.debug(f"Зарегистрирован сервис {service_name}:{service}")
 
     def update(self):
-        self.tables = self.pars.get_tables()
-        self.tables_dict = tables_to_tables_dict(self.tables)
-        self.group_names = tables_to_group_names(self.tables)
+        self.tables_dict = self.pars.get_tables()
+        self.group_names = tables_dict_to_group_names(self.tables_dict)
         self.tables_date = self.pars.get_date()
 
     def __parsing_cycle(self) -> None:
         self.pars.update()
 
-        new_tables = self.pars.get_tables()
+        old_tables_dict = self.tables_dict
+        new_tables_dict = self.pars.get_tables()
         # Проверка на существование информации
-        if not tables_to_group_names(new_tables):
+        if not new_tables_dict:
             logger.warning("Парсер ничего не вернул")
             return
 
-        old_tables = self.tables
+        if (len(old_tables_dict) != len(new_tables_dict)) or \
+                (new_tables_dict.keys() != old_tables_dict.keys()):
 
-        new_tables.sort(key=lambda table: table[0][1])
-        old_tables.sort(key=lambda table: table[0][1])
-
-        if self.pars.get_date() != self.tables_date:
-            self.update()
+            log_message = ""
+            for date, tables in new_tables_dict.items():
+                log_message += f'{date}: {len(tables)}; '
 
             logger.info("Все таблицы обновлены")
-            logger.debug(f"Дата: {self.tables_date}; Кол-во групп: {len(new_tables)}")
+            logger.debug(log_message)
 
-            for group_info in self.db.get_adverted():
+            self._send_all()
+
+        elif updated_groups := self._find_difference(new_tables_dict, old_tables_dict):
+            logger.info(f"Таблицы обновлены: {len(updated_groups)};")
+            logger.debug(f"для {updated_groups}")
+
+            self._send_updated(updated_groups)
+
+    def _send_all(self):
+        self.update()
+        for group_info in self.db.get_adverted():
+            self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
+                                                user_id=group_info["user_id"],
+                                                group_name=group_info["name"]))
+
+    def _send_updated(self, updated_groups):
+        self.update()
+        for group_info in self.db.get_adverted():
+            if group_info["name"] in updated_groups:
                 self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
                                                     user_id=group_info["user_id"],
                                                     group_name=group_info["name"]))
 
-        elif new_tables != old_tables:
-            updated_groups = []
+    @staticmethod
+    def _find_difference(old_tables_dict: table_dict_type, new_tables_dict: table_dict_type) -> list[str]:
+        updated_groups = set()
+        for new_tables, old_tables in zip(new_tables_dict.values(), old_tables_dict.values()):
+            new_tables = list(new_tables.values())
+            old_tables = list(old_tables.values())
+
+            new_tables.sort(key=lambda table: table[0][1])
+            old_tables.sort(key=lambda table: table[0][1])
+
             for new_table, old_table in zip(new_tables, old_tables):
                 if new_table != old_table:
-                    updated_groups.append(new_table[0][1])
+                    updated_groups.add(new_table[0][1])
 
-            logger.info(f"Таблицы обновлены: {len(updated_groups)}; Кол-во групп: {len(new_tables)}")
-            logger.debug(f"для {updated_groups}")
-
-            self.update()
-
-            for group_info in self.db.get_adverted():
-                if group_info["name"] in updated_groups:
-                    self.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
-                                                        user_id=group_info["user_id"],
-                                                        group_name=group_info["name"]))
+        return list(updated_groups)
 
     def parsing_loop(self):
         self.update()
@@ -105,12 +120,16 @@ class Main:
         return ""
 
     def _service_send_table(self, user_id, service_name: str, group_name: str, style_id: int):
-        self.service_send(service_name=service_name, user_id=user_id,
-                          message=table_to_str(
-                              table=self.tables_dict.get(group_name),
-                              style_id=style_id,
-                              date=self.pars.get_date(),
-                              consider_column_width=False))
+        message = ""
+        for date, tables in self.tables_dict.items():
+            message += table_to_str(
+                table=tables.get(group_name),
+                style_id=style_id,
+                date=date,
+                consider_column_width=False)
+            message += "\n"
+        message = message.strip().replace("\n\n", "\n----------------------------\n")
+        self.service_send(service_name=service_name, user_id=user_id, message=message)
 
     def __set_group(self, user_id, service_name: str, group_name):
         normalized_group = normalize_group_name(group_name)
@@ -188,7 +207,7 @@ class Main:
                               message=message_templates.GROUP_NOT_FOUND.format(group=group_name))
 
     def __send_table(self, user_id, service_name: str, group_name: str = None):
-        if not (self.tables and self.group_names):
+        if not self.tables_dict:
             self.service_send(service_name=service_name, user_id=user_id, message=message_templates.NO_INFORMATION)
             return
 

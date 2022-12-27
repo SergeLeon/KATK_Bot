@@ -8,8 +8,8 @@ from fake_useragent import UserAgent
 from requests.exceptions import ReadTimeout, ConnectionError
 from time import sleep
 
-from config import table_type
-from table_formatter import tables_to_group_names, is_group_name, normalize_group_name
+from config import table_type, table_dict_type
+from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict
 from xlsx_parser import get_regular_timetables
 
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
@@ -277,7 +277,7 @@ class Parser:
 
         return group_tables
 
-    def _tables_to_group_tables(self, tables: list[table_type]) -> list[table_type]:
+    def _tables_to_group_tables(self, tables: list[table_type], weekday: str) -> list[table_type]:
         group_tables = []
 
         for table in tables:
@@ -302,7 +302,7 @@ class Parser:
 
         group_names = tables_to_group_names(group_tables)
 
-        for regular_table in self.regular_timetable.get(self.weekday, ""):
+        for regular_table in self.regular_timetable.get(weekday, ""):
             if regular_table[0][1] not in group_names:
                 group_tables.append(regular_table)
 
@@ -324,11 +324,18 @@ class Parser:
 
         return group_tables
 
-    def get_tables(self) -> list[table_type]:
-        return self._tables_to_group_tables(
-               self._split_table(
-               self._select_last_table(
-               tables=self._pars_today_tables())))
+    def get_tables(self) -> table_dict_type:
+        tables = self._pars_today_tables()
+        dates = self.dates
+        tables_dict = dict()
+
+        for date_info, table in zip(dates, tables):
+            weekday, date = date_info
+            tables_dict[date] = tables_to_tables_dict(
+                self._tables_to_group_tables(
+                    tables=self._split_table(table), weekday=weekday))
+
+        return tables_dict
 
     def _pars_spans_text(self) -> list:
         spans = self.soup.find_all("b")
@@ -340,18 +347,24 @@ if __name__ == '__main__':
     import time
     from config import URL, REGULAR_TIMETABLE_PATH
     from table_formatter import table_to_str
+    from collections import Counter
 
     start_time = time.perf_counter()
 
     pars = Parser(URL, REGULAR_TIMETABLE_PATH)
-    tabls = pars.get_tables()
-    for tabl in tabls:
-        print(table_to_str(table=tabl,
-                           style_id=0,
-                           date=pars.get_date(),
-                           consider_column_width=True))
+    table_dict = pars.get_tables()
 
-    names = tables_to_group_names(tabls)
-    print(len(names), names)
+    for key, tabls in table_dict.items():
+        print(key)
+        for tabl in tabls.values():
+            print(table_to_str(table=tabl,
+                               style_id=0,
+                               date=key,
+                               consider_column_width=True))
+
+        names = tabls.keys()
+
+        c = Counter(sorted(names, key=lambda name: name[::-1]))
+        print(len(names), len(c), c)
 
     print("--- %s seconds ---" % (time.perf_counter() - start_time))

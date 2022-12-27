@@ -1,6 +1,6 @@
 import os
 
-VERSION = "1.2.7"
+VERSION = "1.2.8"
 
 VK_TOKEN = os.environ.get('VK_TOKEN')
 
@@ -14,3 +14,7 @@ REGULAR_TIMETABLE_PATH = os.environ.get('REGULAR_TIMETABLE_PATH')
 CHECK_TIME = 240
 
 table_type = list[list[str]]  # Временно вынесен в config
+group_name_type = str
+date_type = str
+table_dict_type = dict[date_type,
+                       dict[group_name_type, table_type]]

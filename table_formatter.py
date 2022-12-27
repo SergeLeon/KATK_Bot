@@ -1,4 +1,4 @@
-from config import table_type
+from config import table_type, table_dict_type
 
 
 def _style_0(table: table_type, column_width: list[int]) -> str:
@@ -146,7 +146,17 @@ def tables_to_group_names(tables: list[table_type]) -> list[str]:
     return [table[0][1] for table in tables]
 
 
-def tables_to_tables_dict(tables: list[table_type]) -> dict:
+def tables_dict_to_group_names(tables_dict: table_dict_type) -> list[str]:
+    group_names = set()
+
+    for tables in tables_dict.values():
+        for table in tables.values():
+            group_names.add(table[0][1])
+
+    return list(group_names)
+
+
+def tables_to_tables_dict(tables: list[table_type]) -> dict[str, table_type]:
     return {table[0][1]: table for table in tables}
 
 
