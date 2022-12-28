@@ -50,27 +50,25 @@ class Main:
             return
         # Если обновлена дата или в новых таблицах имеется дата отличающаяся от имеющихся в старых
         if (self.pars.get_date() != self.tables_date) or (set(new_tables_dict) - set(old_tables_dict)):
-
-            log_message = ""
-            for date, tables in new_tables_dict.items():
-                log_message += f'{date}: {len(tables)}; '
-
             logger.info("Все таблицы обновлены")
-            logger.debug(log_message)
+
+            dates_log_message = "; ".join(f'{date}:{len(tables)}' for date, tables in new_tables_dict.items())
+            logger.debug(dates_log_message)
 
             self._send_all()
+            return
         # Если удалено расписание на прошлый день, то сообщения не присылаются
-        elif len(old_tables_dict) != len(new_tables_dict):
+        if len(old_tables_dict) != len(new_tables_dict):
 
-            deleted_tables = ""
-            for date in set(old_tables_dict) ^ set(new_tables_dict):
-                deleted_tables += f'{date}; '
+            deleted_dates = set(old_tables_dict) ^ set(new_tables_dict)
 
-            logger.info(f"Удалено расписание на: {deleted_tables}")
+            # Удаление лишних дат для последующего сравнения
+            for date in deleted_dates:
+                old_tables_dict.pop(date)
 
-            self.update()
+            logger.info(f"Удалено расписание на: {'; '.join(deleted_dates)}")
 
-        elif updated_groups := self._find_difference(new_tables_dict, old_tables_dict):
+        if updated_groups := self._find_difference(new_tables_dict, old_tables_dict):
             logger.info(f"Таблицы обновлены: {len(updated_groups)};")
             logger.debug(f"для {updated_groups}")
 
