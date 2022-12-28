@@ -49,8 +49,7 @@ class Main:
             logger.warning("Парсер ничего не вернул")
             return
 
-        if (len(old_tables_dict) != len(new_tables_dict)) or \
-                (new_tables_dict.keys() != old_tables_dict.keys()):
+        if self.pars.get_date() != self.tables_date:
 
             log_message = ""
             for date, tables in new_tables_dict.items():
