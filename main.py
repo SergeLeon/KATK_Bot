@@ -48,8 +48,8 @@ class Main:
         if not new_tables_dict:
             logger.warning("Парсер ничего не вернул")
             return
-
-        if self.pars.get_date() != self.tables_date:
+        # Если обновлена дата или в новых таблицах имеется дата отличающаяся от имеющихся в старых
+        if (self.pars.get_date() != self.tables_date) or (set(new_tables_dict) - set(old_tables_dict)):
 
             log_message = ""
             for date, tables in new_tables_dict.items():
@@ -59,6 +59,16 @@ class Main:
             logger.debug(log_message)
 
             self._send_all()
+        # Если удалено расписание на прошлый день, то сообщения не присылаются
+        elif len(old_tables_dict) != len(new_tables_dict):
+
+            deleted_tables = ""
+            for date in set(old_tables_dict) ^ set(new_tables_dict):
+                deleted_tables += f'{date}; '
+
+            logger.info(f"Удалено расписание на: {deleted_tables}")
+
+            self.update()
 
         elif updated_groups := self._find_difference(new_tables_dict, old_tables_dict):
             logger.info(f"Таблицы обновлены: {len(updated_groups)};")
