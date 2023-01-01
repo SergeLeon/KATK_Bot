@@ -120,6 +120,8 @@ class Parser:
         self.dates = dates
 
     def _get_last_date(self):
+        if not self.dates:
+            return "", ""
         # TODO: Если сменится месяц то вернётся неверное значение
         dates = sorted(self.dates, key=lambda date: date[1])
         weekday, date = dates[-1]
