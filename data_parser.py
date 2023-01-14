@@ -245,7 +245,7 @@ class Parser:
             line.append(" ".join(additions))
 
         group_name = table[0][1]
-        group_name = group_name.replace("_", "-")
+        group_name = group_name.replace("_", "-").replace(" ", "")
 
         if group_name.count("-") != 2:
             group_name = normalize_group_name(table[0][1])
@@ -266,6 +266,8 @@ class Parser:
         for item in first_line:
             if is_group_name(item):
                 group_names.append(item)
+            elif ("-" in item or item.isnumeric()) and group_names:
+                group_names[-1] += item
             else:
                 rest.append(item)
 
