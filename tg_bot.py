@@ -58,7 +58,7 @@ class TelegramBot:
             count += 1
 
             if count % (recon_max * 4) == 0:
-                sleep(recon_time * 120)
+                sleep(recon_time * 15)
             elif count % (recon_max * 2) == 0:
                 sleep(recon_time * 10)
             elif count % recon_max == 0:
