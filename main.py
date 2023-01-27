@@ -7,7 +7,7 @@ import message_templates
 from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH, table_type, table_dict_type
 from data_parser import Parser
 from database import DataBase
-from table_formatter import table_to_str, tables_dict_to_group_names, normalize_group_name, STYLES
+from table_formatter import table_to_str, tables_dict_to_group_names, normalize_group_name, surface_translit, STYLES
 
 logger = log.setup_applevel_logger()
 
@@ -120,6 +120,12 @@ class Main:
     def service_send(self, service_name: str, user_id, message: str):
         self.services[service_name].send(user_id=user_id, message=message)
 
+    @staticmethod
+    def _prepare_group_name(group_name):
+        normalized_group = normalize_group_name(group_name)
+        normalized_group = surface_translit(normalized_group)
+        return normalized_group
+
     def _find_group_name(self, finding_group: str) -> str:
         for group in self.group_names:
             if finding_group in group:
@@ -139,7 +145,7 @@ class Main:
         self.service_send(service_name=service_name, user_id=user_id, message=message)
 
     def __set_group(self, user_id, service_name: str, group_name):
-        normalized_group = normalize_group_name(group_name)
+        normalized_group = self._prepare_group_name(group_name)
         normalized_group = self._find_group_name(normalized_group)
         if not normalized_group:
             self.service_send(service_name=service_name, user_id=user_id,
@@ -201,13 +207,14 @@ class Main:
                                       f"{message_templates.NEED_SELECT_GROUP}")
 
     def _send_table_by_group_name(self, user_id, service_name: str, group_name: str = None):
-        norm_group = self._find_group_name(group_name)
-        if bool(norm_group):
+        normalized_group = self._prepare_group_name(group_name)
+        normalized_group = self._find_group_name(normalized_group)
+        if normalized_group:
             group_info = self.db.get_user(user_id, service_name)
             style_id = group_info["style_id"] if group_info else 0
             self._service_send_table(user_id=user_id,
                                      service_name=service_name,
-                                     group_name=norm_group,
+                                     group_name=normalized_group,
                                      style_id=style_id)
         else:
             self.service_send(service_name=service_name, user_id=user_id,

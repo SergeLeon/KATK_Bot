@@ -186,6 +186,13 @@ def normalize_group_name(group_name: str) -> str:
     return "-".join(group_name_parts)
 
 
+def surface_translit(string: str) -> str:
+    eng_letters = "ABCEHKMOPTXY"
+    rus_letters = "АВСЕНКМОРТХУ"
+    trans_table = string.maketrans(eng_letters, rus_letters)
+    return string.translate(trans_table)
+
+
 if __name__ == '__main__':
     tabl = [["ЧАС", "123", "КАБ"],
             ["1:02-02:04 2:05-03:04", "ПАРА1", "11"],

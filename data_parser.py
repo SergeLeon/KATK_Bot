@@ -9,7 +9,7 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from time import sleep
 
 from config import table_type, table_dict_type
-from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict
+from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict, surface_translit
 from xlsx_parser import get_regular_timetables
 
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
@@ -250,6 +250,7 @@ class Parser:
         if group_name.count("-") != 2:
             group_name = normalize_group_name(table[0][1])
 
+        group_name = surface_translit(group_name)
         table[0][1] = group_name
 
         return table
