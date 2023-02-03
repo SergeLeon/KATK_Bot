@@ -9,7 +9,7 @@ from openpyxl.styles import Alignment
 import excel2img
 
 from config import REGULAR_TIMETABLE_PATH
-from xlsx_parser import _worksheet_as_list, _extract_timetables_by_weekdays
+from parsers.xlsx_parser import _worksheet_as_list, _extract_timetables_by_weekdays
 
 OUTPUT_FOLDER = "utils/tables"
 OUTPUT_FOLDER = Path(OUTPUT_FOLDER)

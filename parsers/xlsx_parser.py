@@ -29,38 +29,23 @@ def _find_weekdays_slices(weekdays: list[str]) -> list:
 
     slices = []
     for weekday_cell_num, weekday in enumerate(weekdays, 1):
-        if weekday:
-            if weekday_cell_num != 1:
-                last_empty_cell = weekday_cell_num - 1
-                slices.append([last_weekday, last_weekday_cell_num, last_empty_cell])
+        if not weekday:
+            continue
+        if weekday_cell_num != 1:
+            last_empty_cell = weekday_cell_num - 1
+            slices.append([last_weekday, last_weekday_cell_num, last_empty_cell])
 
-            last_weekday = weekday
-            last_weekday_cell_num = weekday_cell_num
+        last_weekday = weekday
+        last_weekday_cell_num = weekday_cell_num
 
     slices.append((last_weekday, last_weekday_cell_num, len(weekdays)))
 
     return slices
 
 
-def roman_nums_to_latin(nums: list):
-    roman_latin = {
-        "I": "1",
-        "II": "2",
-        "III": "3",
-        "IV": "4",
-        "V": "5",
-        "VI": "6",
-    }
-    for cell, number in enumerate(nums):
-        latin = roman_latin.get(number)
-        if latin:
-            nums[cell] = latin
-
-
 def _extract_timetables_by_weekdays(table):
     weekdays = table[0][1:]
     timestamps = table[1]
-    roman_nums_to_latin(timestamps)
 
     weekdays_slices = _find_weekdays_slices(weekdays)
 
@@ -110,10 +95,9 @@ def get_regular_timetables(filename: str) -> dict[str:list[table_type]]:
 
 if __name__ == "__main__":
     from config import REGULAR_TIMETABLE_PATH
-
+    from table_formatter import table_to_str
     timetables = get_regular_timetables(REGULAR_TIMETABLE_PATH)
     for weekday, tables in timetables.items():
-        print(weekday)
         print(len(tables))
         for i in tables:
-            print(i)
+            print(table_to_str(i, date=weekday))

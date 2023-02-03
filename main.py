@@ -5,7 +5,7 @@ from event import Event
 import logger as log
 import message_templates
 from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH, table_type, table_dict_type
-from data_parser import Parser
+from parsers import Parser
 from database import DataBase
 from table_formatter import table_to_str, tables_dict_to_group_names, normalize_group_name, surface_translit, STYLES
 
@@ -302,15 +302,22 @@ class Main:
 
 
 def register_all_services(application: Main):
-    from config import VK_TOKEN
-    if VK_TOKEN:
-        from vk_bot import VKBot
-        application.register_service(service=VKBot, service_name="vk", token=VK_TOKEN)
+    import bots
+    import config
 
-    from config import TELEGRAM_TOKEN
-    if TELEGRAM_TOKEN:
-        from tg_bot import TelegramBot
-        application.register_service(service=TelegramBot, service_name="telegram", token=TELEGRAM_TOKEN)
+    if config.VK_TOKEN:
+        application.register_service(
+            service=bots.VKBot,
+            service_name="vk",
+            token=config.VK_TOKEN
+        )
+
+    if config.TELEGRAM_TOKEN:
+        application.register_service(
+            service=bots.TelegramBot,
+            service_name="telegram",
+            token=config.TELEGRAM_TOKEN
+        )
 
 
 if __name__ == '__main__':
