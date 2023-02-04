@@ -10,7 +10,7 @@ from time import sleep
 
 from config import table_type, table_dict_type
 from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict, surface_translit
-from .xlsx_parser import get_regular_timetables
+from parsers.xlsx_parser import get_regular_timetables
 
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
 NUMBERS = "0123456789"
@@ -349,27 +349,5 @@ class Parser:
 
 
 if __name__ == '__main__':
-    import time
-    from config import URL, REGULAR_TIMETABLE_PATH
-    from table_formatter import table_to_str
-    from collections import Counter
-
-    start_time = time.perf_counter()
-
-    pars = Parser(URL, REGULAR_TIMETABLE_PATH)
-    table_dict = pars.get_tables()
-
-    for key, tabls in table_dict.items():
-        print(key)
-        for tabl in tabls.values():
-            print(table_to_str(table=tabl,
-                               style_id=0,
-                               date=key,
-                               consider_column_width=True))
-
-        names = tabls.keys()
-
-        c = Counter(sorted(names, key=lambda name: name[::-1]))
-        print(len(names), len(c), c)
-
-    print("--- %s seconds ---" % (time.perf_counter() - start_time))
+    from utils import print_tables
+    print_tables.main()

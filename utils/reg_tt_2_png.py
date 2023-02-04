@@ -8,6 +8,11 @@ from openpyxl.styles import Alignment
 
 import excel2img
 
+import sys
+
+# Для возможности вызова напрямую
+sys.path.append(str(Path(__file__).parent.parent.absolute()))
+
 from config import REGULAR_TIMETABLE_PATH
 from parsers.xlsx_parser import _worksheet_as_list, _extract_timetables_by_weekdays
 

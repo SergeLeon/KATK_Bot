@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Для возможности вызова напрямую
+sys.path.append(str(Path(__file__).parent.parent.absolute()))
+
 from main import *
 
 
