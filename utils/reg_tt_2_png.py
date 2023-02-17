@@ -16,6 +16,8 @@ sys.path.append(str(Path(__file__).parent.parent.absolute()))
 from config import REGULAR_TIMETABLE_PATH
 from parsers.xlsx_parser import _worksheet_as_list, _extract_timetables_by_weekdays
 
+HEADER_ADDITION = "с 13 января 2023 г. по 30 июня 2023 г.(изменения от февраля 2023)"
+
 OUTPUT_FOLDER = "utils/tables"
 OUTPUT_FOLDER = Path(OUTPUT_FOLDER)
 OUTPUT_FOLDER.mkdir(exist_ok=True)
@@ -98,9 +100,14 @@ def main():
 
         sheet = auto_width(sheet)
 
-        cell = sheet.cell(1, 1, group_name + " | с 13 января 2023 г. по 30 июня 2023 г.")
+        cell_width = sum(sheet.column_dimensions[letter].width for letter in "ABCDEFG") * 1.1
+
+        header = f"{HEADER_ADDITION} | {group_name.rjust(int(cell_width / 2 - len(HEADER_ADDITION)), '_')}"
+
+        cell = sheet.cell(1, 1, header)
+        cell.alignment = Alignment(horizontal='left')
+
         sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=7)
-        cell.alignment = Alignment(horizontal='center')
 
     wb.remove_sheet(wb.get_sheet_by_name('Sheet'))
 
