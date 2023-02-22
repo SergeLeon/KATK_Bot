@@ -99,6 +99,8 @@ class Parser:
         dates = []
         for string in strings:
             string = string.lower()
+            if "змен" not in string:
+                continue
 
             day = _find_inclusion(string, WEEKDAYS)
             if not day:
