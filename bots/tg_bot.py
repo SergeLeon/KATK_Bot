@@ -36,9 +36,12 @@ class TelegramBot:
             error_code = exc.error_code
             if error_code == 403:
                 # код 403 - бот заблокирован пользователем или удален из беседы
-                self.events.append(Event.DELETE_GROUP(
-                    service_name=self.service_name,
-                    user_id=user_id))
+                self.events.append(
+                    Event.DELETE_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id
+                    )
+                )
             else:
                 logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
 
@@ -94,8 +97,8 @@ class TelegramBot:
 
         # Ответ на сообщения
         if msg == "/start":
-            self.send(user_id, f"{message_templates.INFO_COMMAND}\n"
-                               f"{message_templates.HELP_COMMAND}")
+            self.send(user_id, (f"{message_templates.INFO_COMMAND}\n"
+                                f"{message_templates.HELP_COMMAND}"))
         elif msg.startswith("/sl "):
 
             msg = msg.replace("/sl ", "")
@@ -108,30 +111,42 @@ class TelegramBot:
 
             elif msg.startswith("group "):
                 group_name = msg.replace("group ", "").upper().replace(" ", "")
-                self.events.append(Event.SET_GROUP(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    group_name=group_name))
+                self.events.append(
+                    Event.SET_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
 
             elif msg.startswith("style "):
                 style_id = msg.replace("style ", "")
-                self.events.append(Event.SET_STYLE(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    style_id=style_id))
+                self.events.append(
+                    Event.SET_STYLE(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        style_id=style_id
+                    )
+                )
 
             elif msg.startswith("adv"):
-                self.events.append(Event.SET_ADV(
-                    service_name=self.service_name,
-                    user_id=user_id))
+                self.events.append(
+                    Event.SET_ADV(
+                        service_name=self.service_name,
+                        user_id=user_id
+                    )
+                )
 
             elif msg.startswith("table"):
                 group_name = msg.replace("table", "").upper().replace(" ", "")
                 group_name = group_name if group_name else None
-                self.events.append(Event.SEND_TABLE(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    group_name=group_name))
+                self.events.append(
+                    Event.SEND_TABLE(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
 
             else:
                 self.send(user_id, message_templates.UNKNOWN_COMMAND)

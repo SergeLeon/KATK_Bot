@@ -55,9 +55,12 @@ class VKBot:
             if exc.code in (7, 901):
                 # код 7 - бот удален из беседы
                 # код 901 - пользователь ограничил число лиц которые могут ему писать
-                self.events.append(Event.DELETE_GROUP(
-                    service_name=self.service_name,
-                    user_id=user_id))
+                self.events.append(
+                    Event.DELETE_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id
+                    )
+                )
             else:
                 logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
 
@@ -109,30 +112,42 @@ class VKBot:
 
             elif msg.startswith("group "):
                 group_name = msg.replace("group ", "").upper().replace(" ", "")
-                self.events.append(Event.SET_GROUP(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    group_name=group_name))
+                self.events.append(
+                    Event.SET_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
 
             elif msg.startswith("style "):
                 style_id = msg.replace("style ", "")
-                self.events.append(Event.SET_STYLE(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    style_id=style_id))
+                self.events.append(
+                    Event.SET_STYLE(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        style_id=style_id
+                    )
+                )
 
             elif msg.startswith("adv"):
-                self.events.append(Event.SET_ADV(
-                    service_name=self.service_name,
-                    user_id=user_id))
+                self.events.append(
+                    Event.SET_ADV(
+                        service_name=self.service_name,
+                        user_id=user_id
+                    )
+                )
 
             elif msg.startswith("table"):
                 group_name = msg.replace("table", "").upper().replace(" ", "")
                 group_name = group_name if group_name else None
-                self.events.append(Event.SEND_TABLE(
-                    service_name=self.service_name,
-                    user_id=user_id,
-                    group_name=group_name))
+                self.events.append(
+                    Event.SEND_TABLE(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
 
             else:
                 self.send(user_id, message_templates.UNKNOWN_COMMAND)
