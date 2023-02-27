@@ -53,12 +53,15 @@ class Main:
         if not new_tables_dict:
             logger.warning("Парсер ничего не вернул")
             return
+
+        if not self._check_group_count(new_tables_dict):
+            logger.warning(f"Разное кол-во групп в расписании; {self._represent_tables(new_tables_dict)}")
+            return
+
         # Если обновлена дата или в новых таблицах имеется дата отличающаяся от имеющихся в старых
         if (self.pars.get_date() != self.tables_date) or (set(new_tables_dict) - set(old_tables_dict)):
             logger.info("Все таблицы обновлены")
-
-            dates_log_message = "; ".join(f'{date}:{len(tables)}' for date, tables in new_tables_dict.items())
-            logger.debug(dates_log_message)
+            logger.debug(self._represent_tables(new_tables_dict))
 
             self._send_all()
             return
@@ -78,6 +81,17 @@ class Main:
             logger.debug(f"для {updated_groups}")
 
             self._send_updated(updated_groups)
+
+    @staticmethod
+    def _represent_tables(tables_dict):
+        return "; ".join(f'{date}:{len(tables)}' for date, tables in tables_dict.items())
+
+    @staticmethod
+    def _check_group_count(tables_dict):
+        if len(tables_dict) <= 1:
+            return True
+        tables_count_list = [len(tables) for tables in tables_dict.values()]
+        return all(tables_count == tables_count_list[0] for tables_count in tables_count_list[1:])
 
     def _send_all(self):
         self.update()
