@@ -56,7 +56,6 @@ class Main:
 
         if not self._check_group_count(new_tables_dict):
             logger.warning(f"Разное кол-во групп в расписании; {self._represent_tables(new_tables_dict)}")
-            return
 
         # Если обновлена дата или в новых таблицах имеется дата отличающаяся от имеющихся в старых
         if (self.pars.get_date() != self.tables_date) or (set(new_tables_dict) - set(old_tables_dict)):
