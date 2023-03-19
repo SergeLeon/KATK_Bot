@@ -1,6 +1,6 @@
 import os
 
-VERSION = "1.2.8"
+VERSION = "1.3.0"
 
 VK_TOKEN = os.environ.get('VK_TOKEN')
 
@@ -16,5 +16,10 @@ CHECK_TIME = 240
 table_type = list[list[str]]  # Временно вынесен в config
 group_name_type = str
 date_type = str
-table_dict_type = dict[date_type,
-                       dict[group_name_type, table_type]]
+table_dict_type = dict[
+    date_type,
+    dict[
+        group_name_type,
+        table_type
+    ]
+]
