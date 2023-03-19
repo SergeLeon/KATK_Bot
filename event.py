@@ -9,7 +9,7 @@
     user_id - Идентификатор пользователя
 """
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Union
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class SetAdvEvent(BaseEvent):
 
 @dataclass(frozen=True)
 class SendTableEvent(BaseEvent):
-    groups: Iterable[str] | None
+    groups: Union[Iterable[str], None]
 
 
 @dataclass(frozen=True)
