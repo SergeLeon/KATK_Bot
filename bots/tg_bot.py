@@ -7,6 +7,7 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from event import Event
 import logger as log
 import message_templates
+from table_formatter import prepare_group_name
 
 logger = log.get_logger(__name__)
 
@@ -52,7 +53,7 @@ class TelegramBot:
 
     def reconnect(self, recon_max: int = 5, recon_time: int = 60, count: int = 1):
         if count == 1:
-            logger.info(f"Соединение разорвано")
+            logger.info("Соединение разорвано")
         try:
             self.bot.stop_bot()
             self.connect()
@@ -109,8 +110,20 @@ class TelegramBot:
             elif msg.startswith("info"):
                 self.send(user_id, message_templates.INFO_COMMAND)
 
+            elif msg.startswith("group add "):
+                group_name = msg.replace("group add ", "").upper().replace(" ", "")
+                group_name = prepare_group_name(group_name)
+                self.events.append(
+                    Event.ADD_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
+
             elif msg.startswith("group "):
                 group_name = msg.replace("group ", "").upper().replace(" ", "")
+                group_name = prepare_group_name(group_name)
                 self.events.append(
                     Event.SET_GROUP(
                         service_name=self.service_name,
@@ -139,12 +152,12 @@ class TelegramBot:
 
             elif msg.startswith("table"):
                 group_name = msg.replace("table", "").upper().replace(" ", "")
-                group_name = group_name if group_name else None
+                groups = (prepare_group_name(group_name),) if group_name else None
                 self.events.append(
                     Event.SEND_TABLE(
                         service_name=self.service_name,
                         user_id=user_id,
-                        group_name=group_name
+                        groups=groups
                     )
                 )
 

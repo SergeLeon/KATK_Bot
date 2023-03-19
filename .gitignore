@@ -1,5 +1,6 @@
 *.log
 *.db
+*.db-journal
 *.xlsx
 *env
 __pycache__

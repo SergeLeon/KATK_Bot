@@ -6,8 +6,8 @@ import logger as log
 import message_templates
 from config import URL, CHECK_TIME, REGULAR_TIMETABLE_PATH, table_dict_type
 from parsers import Parser
-from database import DataBase
-from table_formatter import table_to_str, tables_dict_to_group_names, normalize_group_name, surface_translit, STYLES
+from database import DataBase, UserInfo
+from table_formatter import table_to_str, tables_dict_to_group_names, prepare_group_name, STYLES
 
 logger = log.setup_applevel_logger()
 
@@ -94,24 +94,25 @@ class Main:
 
     def _send_all(self):
         self.update()
-        for group_info in self.db.get_adverted():
+        for user_info in self.db.get_adverted():
             self.events.append(
                 Event.SEND_TABLE(
-                    service_name=group_info["service_name"],
-                    user_id=group_info["user_id"],
-                    group_name=group_info["name"]
+                    service_name=user_info.service_name,
+                    user_id=user_info.user_id,
+                    groups=user_info.groups
                 )
             )
 
     def _send_updated(self, updated_groups):
         self.update()
-        for group_info in self.db.get_adverted():
-            if group_info["name"] in updated_groups:
+        for user_info in self.db.get_adverted():
+            updated_user_groups = [user_group for user_group in user_info.groups if user_group in updated_groups]
+            if updated_user_groups:
                 self.events.append(
                     Event.SEND_TABLE(
-                        service_name=group_info["service_name"],
-                        user_id=group_info["user_id"],
-                        group_name=group_info["name"]
+                        service_name=user_info.service_name,
+                        user_id=user_info.user_id,
+                        groups=updated_user_groups
                     )
                 )
 
@@ -146,28 +147,17 @@ class Main:
     def service_send(self, service_name: str, user_id, message: str):
         self.services[service_name].send(user_id=user_id, message=message)
 
-    @staticmethod
-    def _prepare_group_name(group_name):
-        normalized_group = normalize_group_name(group_name)
-        normalized_group = surface_translit(normalized_group)
-        return normalized_group
-
     def _find_group_name(self, finding_group: str) -> str:
         for group in self.group_names:
             if finding_group in group:
                 return group
         return ""
 
-    def _service_send_table(self, user_id, service_name: str, group_name: str, style_id: int):
+    def _service_send_tables(self, user_id, service_name: str, groups: list[str], style_id: int):
         message = ""
-        for date, tables in self.tables_dict.items():
-            message += table_to_str(
-                table=tables.get(group_name),
-                style_id=style_id,
-                date=date,
-                consider_column_width=False
-            )
-            message += "\n"
+        for group_name in groups:
+            message += self.__get_table(group_name, style_id)
+
         message = message.strip()
         self.service_send(
             service_name=service_name,
@@ -175,8 +165,25 @@ class Main:
             message=message
         )
 
+    def __get_table(self, group_name, style_id):
+        message = ""
+        for date, tables in self.tables_dict.items():
+            table = tables.get(group_name)
+            if not table:
+                message += message_templates.TABLE_FOR_DATE_NOT_FOUND.format(date=date, group=group_name)
+                message += "\n"
+            else:
+                message += table_to_str(
+                    table=tables.get(group_name),
+                    style_id=style_id,
+                    date=date,
+                    consider_column_width=False
+                )
+            message += "\n"
+        return message
+
     def __set_group(self, user_id, service_name: str, group_name):
-        normalized_group = self._prepare_group_name(group_name)
+        normalized_group = prepare_group_name(group_name)
         normalized_group = self._find_group_name(normalized_group)
         if not normalized_group:
             self.service_send(
@@ -187,23 +194,70 @@ class Main:
             return
 
         if self.db.get_user(user_id, service_name):
-            self.db.set_by_user_id(
+            self.db.set_user_groups(
                 user_id=user_id,
                 service_name=service_name,
-                field="name",
-                value=normalized_group
+                groups=(normalized_group,)
             )
         else:
-            self.db.add_group(
-                user_id=user_id,
-                group_name=normalized_group,
-                service_name=service_name
+            self.db.add_user(
+                UserInfo(
+                    user_id=user_id,
+                    service_name=service_name,
+                    groups=(normalized_group,),
+                )
             )
-
         self.service_send(
             service_name=service_name,
             user_id=user_id,
             message=message_templates.GROUP_CHANGED_TO.format(group=normalized_group)
+        )
+
+    def __add_group(self, user_id, service_name: str, group_name):
+        normalized_group = prepare_group_name(group_name)
+        normalized_group = self._find_group_name(normalized_group)
+        if not normalized_group:
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUP_NOT_FOUND.format(group=group_name)
+            )
+            return
+
+        user_info = self.db.get_user(user_id, service_name)
+        if not user_info:
+            self.db.add_user(
+                UserInfo(
+                    user_id=user_id,
+                    service_name=service_name,
+                    groups=(normalized_group,),
+                )
+            )
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUP_CHANGED_TO.format(group=normalized_group)
+            )
+            return
+
+        if normalized_group in user_info.groups:
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUP_ALREADY_TRACKED.format(group=normalized_group)
+            )
+            return
+
+        self.db.set_user_groups(
+            user_id=user_id,
+            service_name=service_name,
+            groups=(*user_info.groups, normalized_group)
+        )
+
+        self.service_send(
+            service_name=service_name,
+            user_id=user_id,
+            message=message_templates.GROUP_ADDED_TO_TRACKING.format(group=normalized_group)
         )
 
     def __set_style(self, user_id, service_name: str, style_id):
@@ -220,11 +274,10 @@ class Main:
         style_id = int(style_id)
 
         if self.db.get_user(user_id, service_name):
-            self.db.set_by_user_id(
+            self.db.set_user_style(
                 user_id=user_id,
                 service_name=service_name,
-                field="style_id",
-                value=style_id
+                style_id=style_id
             )
             self.service_send(
                 service_name=service_name,
@@ -239,8 +292,8 @@ class Main:
             )
 
     def __set_adv(self, user_id, service_name: str):
-        group_info = self.db.get_user(user_id, service_name)
-        if not group_info:
+        user_info = self.db.get_user(user_id, service_name)
+        if not user_info:
             self.service_send(
                 service_name=service_name,
                 user_id=user_id,
@@ -248,23 +301,22 @@ class Main:
             )
             return
 
-        group_adv = not group_info["adv"]
-        self.db.set_by_user_id(
+        user_adv = not user_info.adv
+        self.db.set_user_adv(
             user_id=user_id,
             service_name=service_name,
-            field="adv",
-            value=group_adv
+            adv=user_adv
         )
 
         self.service_send(
             service_name=service_name,
             user_id=user_id,
-            message=message_templates.ADVERTS_ON if group_adv else message_templates.ADVERTS_OFF
+            message=message_templates.ADVERTS_ON if user_adv else message_templates.ADVERTS_OFF
         )
 
     def _send_table_by_db(self, user_id, service_name: str):
-        group_info = self.db.get_user(user_id, service_name)
-        if not group_info:
+        user_info = self.db.get_user(user_id, service_name)
+        if not user_info:
             self.service_send(
                 service_name=service_name,
                 user_id=user_id,
@@ -272,41 +324,24 @@ class Main:
             )
             return
 
-        if group_info["name"] not in self.group_names:
-            self.service_send(
-                service_name=service_name, user_id=user_id,
-                message=(f"{message_templates.GROUP_NOT_FOUND.format(group=group_info['name'])}\n" +
-                         f"{message_templates.NEED_SELECT_GROUP}")
-            )
-            return
-
-        self._service_send_table(
-            user_id=group_info["user_id"],
+        self._service_send_tables(
+            user_id=user_id,
             service_name=service_name,
-            group_name=group_info["name"],
-            style_id=group_info["style_id"]
+            groups=user_info.groups,
+            style_id=user_info.style_id
         )
 
-    def _send_table_by_group_name(self, user_id, service_name: str, group_name: str = None):
-        normalized_group = self._prepare_group_name(group_name)
-        normalized_group = self._find_group_name(normalized_group)
-        if normalized_group:
-            group_info = self.db.get_user(user_id, service_name)
-            style_id = group_info["style_id"] if group_info else 0
-            self._service_send_table(
-                user_id=user_id,
-                service_name=service_name,
-                group_name=normalized_group,
-                style_id=style_id
-            )
-        else:
-            self.service_send(
-                service_name=service_name,
-                user_id=user_id,
-                message=message_templates.GROUP_NOT_FOUND.format(group=group_name)
-            )
+    def _send_table_by_groups(self, user_id, service_name: str, groups: list):
+        user_info = self.db.get_user(user_id, service_name)
+        style_id = user_info.style_id if user_info else 0
+        self._service_send_tables(
+            user_id=user_id,
+            service_name=service_name,
+            groups=groups,
+            style_id=style_id
+        )
 
-    def __send_table(self, user_id, service_name: str, group_name: str = None):
+    def __send_table(self, user_id, service_name: str, groups: list = None):
         if not self.tables_dict:
             self.service_send(
                 service_name=service_name,
@@ -315,13 +350,13 @@ class Main:
             )
             return
 
-        if group_name is None:
+        if groups is None:
             self._send_table_by_db(user_id=user_id, service_name=service_name)
         else:
-            self._send_table_by_group_name(
+            self._send_table_by_groups(
                 user_id=user_id,
                 service_name=service_name,
-                group_name=group_name
+                groups=groups
             )
 
     def __delete_group(self, user_id, service_name: str):
@@ -337,6 +372,13 @@ class Main:
 
         if event_type == Event.SET_GROUP:
             self.__set_group(
+                user_id=event.user_id,
+                service_name=event.service_name,
+                group_name=event.group_name
+            )
+
+        elif event_type == Event.ADD_GROUP:
+            self.__add_group(
                 user_id=event.user_id,
                 service_name=event.service_name,
                 group_name=event.group_name
@@ -358,7 +400,7 @@ class Main:
         elif event_type == Event.SEND_TABLE:
             self.__send_table(
                 user_id=event.user_id,
-                group_name=event.group_name,
+                groups=event.groups,
                 service_name=event.service_name
             )
 

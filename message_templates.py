@@ -34,6 +34,10 @@ GROUP_CHANGED_TO = "Группа изменена на {group}."
 
 GROUP_NOT_FOUND = "Группа {group} не найдена."
 
+GROUP_ALREADY_TRACKED = "Группа {group} уже отслеживается."
+
+GROUP_ADDED_TO_TRACKING = "Группа {group} добавлена к отслеживанию."
+
 STYLE_CHANGED_TO = "Стиль изменен на: {style}"
 
 STYLE_NOT_FOUND = "Стиль {style} не найден."
@@ -46,3 +50,5 @@ ADVERTS_ON = "Оповещения включены."
 ADVERTS_OFF = "Оповещения отключены."
 
 NO_INFORMATION = "Информация отсутствует"
+
+TABLE_FOR_DATE_NOT_FOUND = "Расписание на {date} для группы {group} не найдено."

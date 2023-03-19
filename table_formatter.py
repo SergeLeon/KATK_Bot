@@ -193,6 +193,12 @@ def surface_translit(string: str) -> str:
     return string.translate(trans_table)
 
 
+def prepare_group_name(group_name: str) -> str:
+    normalized_group = normalize_group_name(group_name)
+    normalized_group = surface_translit(normalized_group)
+    return normalized_group
+
+
 if __name__ == '__main__':
     tabl = [["ЧАС", "123", "КАБ"],
             ["1:02-02:04 2:05-03:04", "ПАРА1", "11"],

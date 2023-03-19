@@ -1,30 +1,57 @@
 """
-Система событий основанная на namedtuple.
+Система событий основанная на dataclass.
 
-Все события должны иметь поля от BaseEvent.
+Все события наследуются от BaseEvent.
 Тип события определяется по его классу.
 
 Обязательные поля:
     service_name - Наименование сервиса взаимодействия с пользователем (vk, telegram)
     user_id - Идентификатор пользователя
 """
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import Iterable
 
-BaseEvent = namedtuple('BaseEvent', ['service_name', 'user_id'])
 
-SetGroupEvent = namedtuple('SetGroupEvent', BaseEvent._fields + ('group_name',))
+@dataclass(frozen=True)
+class BaseEvent:
+    service_name: str
+    user_id: str
 
-SetStyleEvent = namedtuple('SetStyleEvent', BaseEvent._fields + ('style_id',))
 
-SetAdvEvent = namedtuple('SetAdvEvent', BaseEvent._fields)
+@dataclass(frozen=True)
+class SetGroupEvent(BaseEvent):
+    group_name: str
 
-SendTableEvent = namedtuple('SendTableEvent', BaseEvent._fields + ('group_name',))
 
-DeleteGroupEvent = namedtuple('DeleteGroupEvent', BaseEvent._fields)
+@dataclass(frozen=True)
+class AddGroupEvent(BaseEvent):
+    group_name: str
+
+
+@dataclass(frozen=True)
+class SetStyleEvent(BaseEvent):
+    style_id: str
+
+
+@dataclass(frozen=True)
+class SetAdvEvent(BaseEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class SendTableEvent(BaseEvent):
+    groups: Iterable[str] | None
+
+
+@dataclass(frozen=True)
+class DeleteGroupEvent(BaseEvent):
+    pass
 
 
 class Event:
     SET_GROUP = SetGroupEvent
+    ADD_GROUP = AddGroupEvent
+
     SET_STYLE = SetStyleEvent
     SET_ADV = SetAdvEvent
 
