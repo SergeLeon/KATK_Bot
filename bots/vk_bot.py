@@ -190,6 +190,7 @@ class VKBot:
 
             except:
                 logger.exception('')
+                self.reconnect()
 
 
 if __name__ == "__main__":
