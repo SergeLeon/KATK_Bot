@@ -9,7 +9,7 @@ from database import DataBase
 
 
 def main():
-    db = DataBase("../database.db")
+    db = DataBase(Path(__file__).parent.parent / "database.db")
 
     users = db.get_all()
     groups = []
