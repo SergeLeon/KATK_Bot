@@ -74,8 +74,8 @@ class VKBot:
             self.longpoll = VkBotLongPoll(self.vk_session, self.group_id)
             self.vk = self.vk_session.get_api()
 
-        except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError) as exc:
-            if isinstance(exc, vk_api.exceptions.ApiHttpError):
+        except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError, vk_api.exceptions.ApiError) as exc:
+            if isinstance(exc, vk_api.exceptions.ApiHttpError) or isinstance(exc, vk_api.exceptions.ApiError):
                 logger.warning(f"При переподключении {self.service_name} произошла ошибка:\n{exc}")
 
             count += 1
@@ -185,7 +185,7 @@ class VKBot:
             try:
                 self.pooling()
 
-            except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError):
+            except (ReadTimeout, ConnectionError, vk_api.exceptions.ApiHttpError, vk_api.exceptions.ApiError):
                 self.reconnect()
 
             except:
