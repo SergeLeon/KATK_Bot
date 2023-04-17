@@ -17,10 +17,7 @@ def send_all(app: Main = None):
     if tables:
         app.update()
         logger.info("Принудительная отправка таблиц")
-        for group_info in app.db.get_adverted():
-            app.events.append(Event.SEND_TABLE(service_name=group_info["service_name"],
-                                               user_id=group_info["user_id"],
-                                               group_name=group_info["name"]))
+        app._send_all()
 
     else:
         logger.warning("Парсер ничего не вернул")
