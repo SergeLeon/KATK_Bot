@@ -9,7 +9,8 @@ from requests.exceptions import ReadTimeout, ConnectionError
 from time import sleep
 
 from config import table_type, table_dict_type
-from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict, surface_translit
+from table_formatter import tables_to_group_names, is_group_name, normalize_group_name, tables_to_tables_dict, \
+    surface_translit
 from parsers.xlsx_parser import get_regular_timetables
 
 WEEKDAYS = ("понедельник", 'вторник', 'среда', 'четверг', 'пятница', 'суббота')
@@ -274,6 +275,19 @@ class Parser:
             else:
                 rest.append(item)
 
+        # 20-ТО-1;2;3 >>> 20-TO-1, 20-TO-2, 20-TO-3
+        for name in group_names:
+            if ";" not in name:
+                continue
+            inclusions = name.split(";")
+
+            group_names.remove(name)
+            group_names.insert(0, inclusions[0])
+
+            for inclusion in inclusions[1:]:
+                base = inclusions[0].rsplit("-", 1)[0]
+                group_names.append(f"{base}-{inclusion}")
+
         group_tables = []
 
         for group_name in group_names:
@@ -352,4 +366,5 @@ class Parser:
 
 if __name__ == '__main__':
     from utils import print_tables
+
     print_tables.main()
