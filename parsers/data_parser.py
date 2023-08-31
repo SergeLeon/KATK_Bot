@@ -181,7 +181,7 @@ class Parser:
         new_tables = []
         for line_num, line in enumerate(text_table):
             group_name_in_line = any(is_group_name(cell) for cell in line[1:])
-            is_group_names_line = "ГРУППА" in line[0] or (not line[0] and group_name_in_line)
+            is_group_names_line = "ГРУПП" in line[0] or group_name_in_line
             if is_group_names_line:
                 new_tables.append(text_table[last_line: line_num])
                 last_line = line_num
