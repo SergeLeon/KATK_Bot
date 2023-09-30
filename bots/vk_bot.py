@@ -57,7 +57,7 @@ class VKBot:
                 # код 7 - бот удален из беседы
                 # код 901 - пользователь ограничил число лиц которые могут ему писать
                 self.events.append(
-                    Event.DELETE_GROUP(
+                    Event.DELETE_USER(
                         service_name=self.service_name,
                         user_id=user_id
                     )
@@ -116,6 +116,17 @@ class VKBot:
                 group_name = prepare_group_name(group_name)
                 self.events.append(
                     Event.ADD_GROUP(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        group_name=group_name
+                    )
+                )
+
+            elif msg.startswith("group del "):
+                group_name = msg.replace("group del ", "").upper().replace(" ", "")
+                group_name = prepare_group_name(group_name)
+                self.events.append(
+                    Event.DEL_GROUP(
                         service_name=self.service_name,
                         user_id=user_id,
                         group_name=group_name

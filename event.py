@@ -29,6 +29,11 @@ class AddGroupEvent(BaseEvent):
 
 
 @dataclass(frozen=True)
+class DelGroupEvent(BaseEvent):
+    group_name: str
+
+
+@dataclass(frozen=True)
 class SetStyleEvent(BaseEvent):
     style_id: str
 
@@ -44,17 +49,18 @@ class SendTableEvent(BaseEvent):
 
 
 @dataclass(frozen=True)
-class DeleteGroupEvent(BaseEvent):
+class DeleteUserEvent(BaseEvent):
     pass
 
 
 class Event:
     SET_GROUP = SetGroupEvent
     ADD_GROUP = AddGroupEvent
+    DEL_GROUP = DelGroupEvent
 
     SET_STYLE = SetStyleEvent
     SET_ADV = SetAdvEvent
 
     SEND_TABLE = SendTableEvent
 
-    DELETE_GROUP = DeleteGroupEvent
+    DELETE_USER = DeleteUserEvent

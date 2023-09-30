@@ -260,6 +260,49 @@ class Main:
             message=message_templates.GROUP_ADDED_TO_TRACKING.format(group=normalized_group)
         )
 
+    def __del_group(self, user_id, service_name: str, group_name):
+        normalized_group = prepare_group_name(group_name)
+        normalized_group = self._find_group_name(normalized_group)
+        if not normalized_group:
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUP_NOT_FOUND.format(group=group_name)
+            )
+            return
+
+        user_info = self.db.get_user(user_id, service_name)
+        if not user_info or not user_info.groups:
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUPS_ARE_EMPTY
+            )
+            return
+
+        if normalized_group not in user_info.groups:
+            self.service_send(
+                service_name=service_name,
+                user_id=user_id,
+                message=message_templates.GROUP_NOT_TRACKING.format(group=normalized_group)
+            )
+            return
+
+        new_groups = list(user_info.groups)
+        new_groups.remove(normalized_group)
+
+        self.db.set_user_groups(
+            user_id=user_id,
+            service_name=service_name,
+            groups=new_groups
+        )
+
+        self.service_send(
+            service_name=service_name,
+            user_id=user_id,
+            message=message_templates.GROUP_REMOVED_FROM_TRACKING.format(group=normalized_group)
+        )
+
     def __set_style(self, user_id, service_name: str, style_id):
         style_id_is_valid = style_id.isnumeric() and (int(style_id) in STYLES)
 
@@ -316,7 +359,7 @@ class Main:
 
     def _send_table_by_db(self, user_id, service_name: str):
         user_info = self.db.get_user(user_id, service_name)
-        if not user_info:
+        if not user_info or not user_info.groups:
             self.service_send(
                 service_name=service_name,
                 user_id=user_id,
@@ -384,6 +427,13 @@ class Main:
                 group_name=event.group_name
             )
 
+        elif event_type == Event.DEL_GROUP:
+            self.__del_group(
+                user_id=event.user_id,
+                service_name=event.service_name,
+                group_name=event.group_name
+            )
+
         elif event_type == Event.SET_STYLE:
             self.__set_style(
                 user_id=event.user_id,
@@ -404,7 +454,7 @@ class Main:
                 service_name=event.service_name
             )
 
-        elif event_type == Event.DELETE_GROUP:
+        elif event_type == Event.DELETE_USER:
             self.__delete_group(
                 user_id=event.user_id,
                 service_name=event.service_name

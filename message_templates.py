@@ -37,7 +37,13 @@ GROUP_NOT_FOUND = "Группа {group} не найдена."
 
 GROUP_ALREADY_TRACKED = "Группа {group} уже отслеживается."
 
+GROUP_NOT_TRACKING = "Группа {group} не отслеживается."
+
 GROUP_ADDED_TO_TRACKING = "Группа {group} добавлена к отслеживанию."
+
+GROUP_REMOVED_FROM_TRACKING = "Группа {group} удалена из отслеживания."
+
+GROUPS_ARE_EMPTY = "Список отслеживаемых групп пуст."
 
 STYLE_CHANGED_TO = "Стиль изменен на: {style}"
 
