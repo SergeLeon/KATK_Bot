@@ -1,3 +1,5 @@
+import re
+
 from openpyxl import load_workbook
 
 from config import table_type
@@ -7,7 +9,13 @@ def _worksheet_as_list(worksheet, replace_none=True) -> list[list[str]]:
     table = []
     for row in worksheet.rows:
         if replace_none:
-            table.append([cell.value.strip().replace("\n", "").upper() if cell.value else "" for cell in row])
+            table.append(
+                [
+                    re.sub(" *-{2,} *", " / ", cell.value.replace("\n", "").upper()).strip()
+                    if cell.value else ""
+                    for cell in row
+                ]
+            )
         else:
             table.append([cell.value for cell in row])
     return table
@@ -57,7 +65,7 @@ def _extract_timetables_by_weekdays(table):
         group_name = row[0].replace(" ", "-").replace("--", "-")
         for weekday, slice_start, slice_stop in weekdays_slices:
             timetables_by_weekdays[weekday][group_name] = (
-                timestamps[slice_start:slice_stop+1], row[slice_start:slice_stop+1])
+                timestamps[slice_start:slice_stop + 1], row[slice_start:slice_stop + 1])
 
     return timetables_by_weekdays
 
@@ -96,6 +104,7 @@ def get_regular_timetables(filename: str) -> dict[str:list[table_type]]:
 if __name__ == "__main__":
     from config import REGULAR_TIMETABLE_PATH
     from table_formatter import table_to_str
+
     timetables = get_regular_timetables(REGULAR_TIMETABLE_PATH)
     for weekday, tables in timetables.items():
         print(len(tables))
