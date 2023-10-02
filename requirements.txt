@@ -1,6 +1,6 @@
-beautifulsoup4==4.11.2
-fake-useragent==1.1.1
-pyTelegramBotAPI==4.10.0
-requests==2.28.2
+beautifulsoup4==4.12.2
+fake-useragent==1.2.1
+pyTelegramBotAPI==4.14.0
+requests==2.31.0
 vk-api==11.9.9
-openpyxl==3.1.1
+openpyxl==3.1.2
