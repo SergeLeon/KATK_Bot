@@ -250,8 +250,8 @@ class Parser:
         group_name = table[0][1]
         group_name = group_name.replace("_", "-").replace(" ", "")
 
-        if group_name.count("-") != 2:
-            group_name = normalize_group_name(table[0][1])
+        if group_name.count("-") < 2:
+            group_name = normalize_group_name(group_name)
 
         group_name = surface_translit(group_name)
         table[0][1] = group_name
