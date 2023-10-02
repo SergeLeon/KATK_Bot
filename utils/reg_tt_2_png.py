@@ -117,7 +117,12 @@ def main():
     wb.save(timetable_by_group_xlsx)
 
     for group_name in tables:
-        excel2img.export_img(timetable_by_group_xlsx, f"{OUTPUT_FOLDER / group_name}.png", group_name, None)
+        while True:
+            try:
+                excel2img.export_img(timetable_by_group_xlsx, f"{OUTPUT_FOLDER / group_name}.png", group_name, None)
+                break
+            except:
+                pass
         print(f"{OUTPUT_FOLDER / group_name}.png")
 
 
