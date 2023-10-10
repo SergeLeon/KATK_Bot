@@ -163,7 +163,7 @@ def tables_to_tables_dict(tables: list[table_type]) -> dict[str, table_type]:
 
 
 def is_group_name(string: str) -> bool:
-    return bool(re.match(r"[1-9]{1,3}-*\w{1,3}-*[1-9]{1,3}", string, re.IGNORECASE))
+    return bool(re.match(r"[1-9]{1,3}.*[1-9]{1,3}", string, re.IGNORECASE))
 
 
 def normalize_group_name(group_name: str) -> str:
