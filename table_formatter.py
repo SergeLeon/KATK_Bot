@@ -1,3 +1,5 @@
+import re
+
 from config import table_type, table_dict_type
 
 
@@ -161,9 +163,7 @@ def tables_to_tables_dict(tables: list[table_type]) -> dict[str, table_type]:
 
 
 def is_group_name(string: str) -> bool:
-    if string:
-        return "-" in string and string[0].isnumeric()
-    return False
+    return bool(re.match(r"[1-9]{1,3}-*\w{1,3}-*[1-9]{1,3}", string, re.IGNORECASE))
 
 
 def normalize_group_name(group_name: str) -> str:
