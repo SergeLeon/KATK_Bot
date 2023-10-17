@@ -40,7 +40,7 @@ GROUP_ALREADY_TRACKED = "Группа {group} уже отслеживается.
 
 GROUP_NOT_TRACKING = "Группа {group} не отслеживается."
 
-GROUP_ADDED_TO_TRACKING = "Группа {group} добавлена к отслеживанию."
+GROUP_ADDED_TO_TRACKING = "Группа {group} добавлена к отслеживанию.\nОтслеживаемые группы: {groups}"
 
 GROUP_REMOVED_FROM_TRACKING = "Группа {group} удалена из отслеживания."
 

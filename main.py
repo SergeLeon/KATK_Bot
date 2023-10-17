@@ -257,7 +257,10 @@ class Main:
         self.service_send(
             service_name=service_name,
             user_id=user_id,
-            message=message_templates.GROUP_ADDED_TO_TRACKING.format(group=normalized_group)
+            message=message_templates.GROUP_ADDED_TO_TRACKING.format(
+                group=normalized_group,
+                groups=", ".join((*user_info.groups, normalized_group))
+            )
         )
 
     def __del_group(self, user_id, service_name: str, group_name):
