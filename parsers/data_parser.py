@@ -270,7 +270,7 @@ class Parser:
         for item in first_line:
             if is_group_name(item):
                 group_names.append(item)
-            elif ("-" in item or item.isnumeric()) and group_names:
+            elif (("-" in item or item.isnumeric()) or len(item) == 1) and group_names:
                 group_names[-1] += item
             else:
                 rest.append(item)
