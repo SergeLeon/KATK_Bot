@@ -319,29 +319,11 @@ class Parser:
             table = self._reformat_table(table)
             group_tables.append(table)
 
-        group_tables = self._delete_duplicates(group_tables)
-
         group_names = tables_to_group_names(group_tables)
 
         for regular_table in self.regular_timetable.get(weekday, ""):
             if regular_table[0][1] not in group_names:
                 group_tables.append(regular_table)
-
-        return group_tables
-
-    @staticmethod
-    def _delete_duplicates(tables: list[table_type]) -> list[table_type]:
-        group_tables = []
-        groups = []
-
-        for num, table in enumerate(tables):
-            if num == len(tables) - 1:
-                num -= 1
-            if table[0][1] in groups and tables[num + 1][0][1] in groups:
-                break
-
-            groups.append(table[0][1])
-            group_tables.append(table)
 
         return group_tables
 
