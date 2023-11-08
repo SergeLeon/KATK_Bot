@@ -1,4 +1,5 @@
 import re
+from random import randint
 
 from config import table_type, table_dict_type
 
@@ -127,6 +128,13 @@ def table_to_str(table: table_type,
         table[0][1] = f"{table[0][1]} Группа"
 
     column_width = _column_width_by_table(table) if consider_column_width else [0 for _ in range(len(table[0]))]
+
+    if (len(table) == 4 and
+            randint(1, 50) == 12 and
+            "Практика" == table[1][1] == table[2][1] == table[3][1]):
+        table[1][1] += "??"
+        table[2][1] += "!?"
+        table[3][1] += "!!"
 
     table_str = STYLES.get(style_id, _style_0)(table, column_width)
 
