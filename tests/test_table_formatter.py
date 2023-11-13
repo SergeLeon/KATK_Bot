@@ -29,10 +29,10 @@ class Test(TestCase):
         self.assertEqual(output, must_output)
 
     def test_is_group_name(self):
-        for i in ["20-ТО-1", "20ТО-1", "20-ТО1"]:
+        for i in ["20-ТО-1", "20ТО-1", "20-ТО1", "20ТО1", "20 ТО 1"]:
             self.assertTrue(is_group_name(i))
 
-        for i in ["20ТО1", "qwerty", "NOTAGROUPNAME"]:
+        for i in ["qwerty", "NOTAGROUPNAME"]:
             self.assertFalse(is_group_name(i))
 
     def test_normalize_group_name(self):
