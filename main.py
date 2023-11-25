@@ -95,6 +95,9 @@ class Main:
     def _send_all(self):
         self.update()
         for user_info in self.db.get_adverted():
+            if not user_info.groups:
+                continue
+
             self.events.append(
                 Event.SEND_TABLE(
                     service_name=user_info.service_name,
