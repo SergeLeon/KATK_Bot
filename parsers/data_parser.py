@@ -193,7 +193,9 @@ class Parser:
     def _split_tables_by_columns(tables: list[table_type]) -> list[table_type]:
         group_tables = []
         for table in tables:
-
+            for line in table:
+                while len(line) < len(table[0]):
+                    line.append("")
             for group_num in range(1, len(table[0])):
                 group_tables.append([[line[0], line[group_num]] for line in table])
 
