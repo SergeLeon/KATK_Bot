@@ -412,7 +412,15 @@ class Main:
         self.db.delete_user(user_id=user_id, service_name=service_name)
 
     def __change_user_id(self, user_id: str, service_name:str, new_user_id: str):
-        self.db.change_user_id(user_id=user_id, service_name=service_name, new_user_id=new_user_id)
+        user_info = self.db.get_user(new_user_id, service_name)
+        if not user_info:
+            self.db.change_user_id(user_id=user_id, service_name=service_name, new_user_id=new_user_id)
+        else:
+            self.db.set_user_adv(
+                user_id=user_id,
+                service_name=service_name,
+                adv=False
+            )
 
     def __handle_event(self, event) -> None:
         if event.service_name not in self.services:
