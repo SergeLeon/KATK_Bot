@@ -411,6 +411,9 @@ class Main:
     def __delete_group(self, user_id, service_name: str):
         self.db.delete_user(user_id=user_id, service_name=service_name)
 
+    def __change_user_id(self, user_id: str, service_name:str, new_user_id: str):
+        self.db.change_user_id(user_id=user_id, service_name=service_name, new_user_id=new_user_id)
+
     def __handle_event(self, event) -> None:
         if event.service_name not in self.services:
             logger.warning(
@@ -464,6 +467,12 @@ class Main:
             self.__delete_group(
                 user_id=event.user_id,
                 service_name=event.service_name
+            )
+        elif event_type == Event.CHANGE_ID:
+            self.__change_user_id(
+                user_id=event.user_id,
+                service_name=event.service_name,
+                new_user_id=event.new_user_id
             )
         else:
             logger.warning(f"Неотлавливаемый event: {event}")

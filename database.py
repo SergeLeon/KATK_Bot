@@ -64,7 +64,7 @@ class DataBase:
         if not user:
             return user
 
-        ser_id, service_name, adv, style_id = user
+        user_id, service_name, adv, style_id = user
 
         self.cursor.execute(
             "SELECT group_name FROM UserGroups WHERE user_id=? AND service_name=?;",
@@ -135,6 +135,14 @@ class DataBase:
         )
         self.connection.commit()
         logger.debug(f"Для пользователя {user_id} {service_name} установленно {style_id=}")
+
+    def change_user_id(self, user_id, service_name, new_user_id):
+        self.cursor.execute(
+            "UPDATE Users SET user_id=? WHERE user_id=? AND service_name=?;",
+            (new_user_id, user_id, service_name)
+        )
+        self.connection.commit()
+        logger.debug(f"Для пользователя {user_id} {service_name} user_id изменено на {new_user_id}")
 
     def get_adverted(self) -> list[UserInfo]:
         self.cursor.execute(

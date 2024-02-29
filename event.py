@@ -53,6 +53,11 @@ class DeleteUserEvent(BaseEvent):
     pass
 
 
+@dataclass(frozen=True)
+class ChangeUserIdEvent(BaseEvent):
+    new_user_id: str
+
+
 class Event:
     SET_GROUP = SetGroupEvent
     ADD_GROUP = AddGroupEvent
@@ -64,3 +69,5 @@ class Event:
     SEND_TABLE = SendTableEvent
 
     DELETE_USER = DeleteUserEvent
+
+    CHANGE_ID = ChangeUserIdEvent

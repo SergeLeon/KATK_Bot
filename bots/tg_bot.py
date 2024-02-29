@@ -43,8 +43,21 @@ class TelegramBot:
                         user_id=user_id
                     )
                 )
+
+            elif error_code == 400 and "supergroup" in exc.description:
+                # код 400 описание "Bad Request: group chat was upgraded to a supergroup chat"
+                new_user_id = exc.result_json["parameters"]["migrate_to_chat_id"]
+                self.events.append(
+                    Event.CHANGE_ID(
+                        service_name=self.service_name,
+                        user_id=user_id,
+                        new_user_id=new_user_id
+                    )
+                )
+                self.send(new_user_id, message, **kwargs)
+
             else:
-                logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc}")
+                logger.warning(f"При отправке {user_id} {self.service_name} произошла ошибка:\n{exc.result_json}")
 
     def connect(self):
         self.bot = TeleBot(self.token)
