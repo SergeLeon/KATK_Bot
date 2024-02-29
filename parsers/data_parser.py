@@ -217,37 +217,38 @@ class Parser:
         return table
 
     @staticmethod
-    def _reformat_table(table: table_type) -> table_type:
+    def _reformat_table_line(line):
+        titles = []
+        additions = []
+        if "http" in line[1]:
+            splited = line[1].split()
+
+            for word in splited:
+                if "http" in word:
+                    additions.append(word)
+                else:
+                    titles.append(word)
+
+            line[1] = " ".join(titles)
+
+        if "КАБ" in line[1]:
+            splited = line[1].rsplit('КАБ', 1)
+
+            title = splited[0].rstrip("( ")
+            cabinet_number = splited[1].strip("). ")
+
+            line[1] = title
+            additions.insert(0, cabinet_number)
+
+        line.append(" ".join(additions))
+
+    def _reformat_table(self, table: table_type) -> table_type:
         table = [[cell for cell in line] for line in table]
 
         for line in table:
-
             if len(line) != 2:
                 continue
-
-            titles = []
-            additions = []
-            if "http" in line[1]:
-                splited = line[1].split()
-
-                for word in splited:
-                    if "http" in word:
-                        additions.append(word)
-                    else:
-                        titles.append(word)
-
-                line[1] = " ".join(titles)
-
-            if "КАБ" in line[1]:
-                splited = line[1].rsplit('КАБ', 1)
-
-                title = splited[0].rstrip("( ")
-                cabinet_number = splited[1].strip("). ")
-
-                line[1] = title
-                additions.insert(0, cabinet_number)
-
-            line.append(" ".join(additions))
+            self._reformat_table_line(line)
 
         group_name = table[0][1]
         group_name = group_name.replace("_", "-").replace(" ", "")
