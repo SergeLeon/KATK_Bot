@@ -54,7 +54,7 @@ class Main:
             logger.warning("Парсер ничего не вернул")
             return
 
-        if not self._check_group_count(new_tables_dict):
+        if REGULAR_TIMETABLE_PATH and not self._check_group_count(new_tables_dict):
             logger.warning(f"Разное кол-во групп в расписании; {self._represent_tables(new_tables_dict)}")
 
         # Если обновлена дата или в новых таблицах имеется дата отличающаяся от имеющихся в старых
